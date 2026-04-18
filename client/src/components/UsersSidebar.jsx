@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export function UsersSidebar({ users, currentUser, onUserClick, activeChats, onChatClick, onGeneralClick, unreadCounts = {} }) {
+export function UsersSidebar({ users, currentUser, onUserClick, activeChats, onChatClick, onGeneralClick, unreadCounts = {}, onClose }) {
   const onlineUsers = users.filter(u => u.socketId !== currentUser?.socketId);
   const [activeTab, setActiveTab] = useState('general');
 
@@ -15,9 +15,9 @@ export function UsersSidebar({ users, currentUser, onUserClick, activeChats, onC
   };
 
   return (
-    <div className="w-72 bg-chat-surface border-r border-chat-border flex flex-col h-screen overflow-hidden">
+    <div className="w-72 sm:w-72 bg-chat-surface border-r border-chat-border flex flex-col h-screen overflow-hidden">
       {/* Tab Navigation */}
-      <div className="flex border-b border-chat-border flex-shrink-0">
+      <div className="flex items-center border-b border-chat-border flex-shrink-0">
         <button
           onClick={() => { setActiveTab('general'); onGeneralClick?.(); }}
           className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
@@ -56,6 +56,19 @@ export function UsersSidebar({ users, currentUser, onUserClick, activeChats, onC
             )}
           </div>
         </button>
+
+        {/* Mobile close button — only shown on small screens */}
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="md:hidden flex-shrink-0 p-3 hover:bg-chat-bg transition-colors"
+            aria-label="Close sidebar"
+          >
+            <svg className="w-5 h-5" style={{ color: 'var(--chat-text-muted)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* Content Area */}

@@ -67,7 +67,8 @@ function ChatApp() {
   const [showDM, setShowDM] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState({});
   const [globalReplyTo, setGlobalReplyTo] = useState(null);
-  const [dmInvitation, setDmInvitation] = useState(null); // { roomId, senderUsername, message }
+  const [dmInvitation, setDmInvitation] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // mobile sidebar drawer
   const [isDark, setIsDark] = useState(() => {
     // Persist theme choice in localStorage
     const saved = localStorage.getItem('chat_theme');
@@ -547,18 +548,18 @@ function ChatApp() {
     <div className="h-screen bg-chat-bg flex overflow-hidden">
       {/* DM Invitation Toast Notification */}
       {dmInvitation && (
-        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 animate-fade-in-down">
-          <div className="bg-chat-primary text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-4">
-            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-sm">
+          <div className="bg-chat-primary text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z"/>
                 <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z"/>
               </svg>
             </div>
-            <div>
-              <p className="font-semibold">New Private Message</p>
-              <p className="text-sm text-white/80">
-                <span className="font-medium">{dmInvitation.senderUsername}</span>: {dmInvitation.messageText.slice(0, 50)}{dmInvitation.messageText.length > 50 ? '...' : ''}
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm">New Private Message</p>
+              <p className="text-xs text-white/80 truncate">
+                <span className="font-medium">{dmInvitation.senderUsername}</span>: {dmInvitation.messageText.slice(0, 40)}{dmInvitation.messageText.length > 40 ? '…' : ''}
               </p>
             </div>
             <button
@@ -566,7 +567,7 @@ function ChatApp() {
                 handleChatClick({ roomId: dmInvitation.roomId, targetUser: { username: dmInvitation.senderUsername } });
                 setDmInvitation(null);
               }}
-              className="ml-4 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg text-sm transition-colors"
+              className="flex-shrink-0 px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg text-xs transition-colors"
             >
               Open
             </button>
@@ -574,17 +575,35 @@ function ChatApp() {
         </div>
       )}
 
-      {/* Users Sidebar */}
-      <UsersSidebar
-        users={users}
-        currentUser={user}
-        onUserClick={handleUserClick}
-        activeChats={activeChats}
-        onChatClick={handleChatClick}
-        unreadCounts={unreadCounts}
-      />
+      {/* ── Mobile sidebar overlay backdrop ── */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
-      {/* Main Chat Panel */}
+      {/* ── Sidebar ─────────────────────────────────────────
+            Desktop: always visible (w-72)
+            Mobile:  slide-in drawer from left, hidden by default
+      ─────────────────────────────────────────────────── */}
+      <div className={`
+        fixed inset-y-0 left-0 z-40 transition-transform duration-300 ease-in-out
+        md:relative md:translate-x-0 md:z-auto md:flex-shrink-0
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+      `}>
+        <UsersSidebar
+          users={users}
+          currentUser={user}
+          onUserClick={(u) => { handleUserClick(u); setSidebarOpen(false); }}
+          activeChats={activeChats}
+          onChatClick={(chat) => { handleChatClick(chat); setSidebarOpen(false); }}
+          unreadCounts={unreadCounts}
+          onClose={() => setSidebarOpen(false)}
+        />
+      </div>
+
+      {/* ── Main Chat Panel ── */}
       <div className="flex-1 flex flex-col min-w-0 min-h-0">
         <ChatPanel
           title="Global Chat"
@@ -595,6 +614,7 @@ function ChatApp() {
           onReplyPrivately={handleReplyPrivately}
           isDark={isDark}
           onToggleTheme={toggleTheme}
+          onMenuClick={() => setSidebarOpen(prev => !prev)}
         />
         <MessageInput
           onSend={handleSendMessage}
@@ -603,7 +623,7 @@ function ChatApp() {
         />
       </div>
 
-      {/* DM Modal */}
+      {/* ── DM Modal ── */}
       <DMModal
         isOpen={showDM}
         targetUser={activeDM?.targetUser}

@@ -84,7 +84,7 @@ export function MessageInput({ onSend, placeholder = 'Type a message...', isDM =
       )}
 
       {/* Input Row */}
-      <div className="flex items-end gap-3 p-4">
+      <div className="flex items-end gap-2 sm:gap-3 p-3 sm:p-4">
         {/* Input */}
         <div className="flex-1 relative">
           <textarea
