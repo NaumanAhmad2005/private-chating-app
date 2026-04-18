@@ -19,9 +19,9 @@ export function UsersSidebar({ users, currentUser, onUserClick, activeChats, onC
   };
 
   return (
-    <div className="w-72 bg-chat-surface border-r border-chat-border flex flex-col h-screen">
+    <div className="w-72 bg-chat-surface border-r border-chat-border flex flex-col h-screen overflow-hidden">
       {/* Tab Navigation - Small top section */}
-      <div className="flex border-b border-chat-border">
+      <div className="flex border-b border-chat-border flex-shrink-0">
         {/* General Tab */}
         <button
           onClick={() => {
@@ -66,7 +66,7 @@ export function UsersSidebar({ users, currentUser, onUserClick, activeChats, onC
       </div>
 
       {/* Content Area - Larger section */}
-      <div className="flex-1 overflow-hidden flex flex-col">
+      <div className="flex-1 min-h-0 flex flex-col">
         {/* General Tab Content */}
         {activeTab === 'general' && (
           <div className="flex-1 overflow-y-auto">
@@ -85,7 +85,7 @@ export function UsersSidebar({ users, currentUser, onUserClick, activeChats, onC
             </div>
 
             {/* Users List */}
-            <div className="flex-1 overflow-y-auto p-2 space-y-1">
+            <div className="p-2 space-y-1">
               {onlineUsers.map((user) => (
                 <button
                   key={user.socketId}
@@ -193,7 +193,7 @@ export function UsersSidebar({ users, currentUser, onUserClick, activeChats, onC
 
       {/* Current User */}
       {currentUser && (
-        <div className="p-4 border-t border-chat-border bg-chat-bg">
+        <div className="p-4 border-t border-chat-border bg-chat-bg flex-shrink-0">
           <div className="flex items-center gap-3">
             <img
               src={currentUser.avatar}

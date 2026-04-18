@@ -1,8 +1,8 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { MessageBubble } from './MessageBubble';
 import { TypingIndicator } from './TypingIndicator';
 
-export function ChatPanel({ title, messages, typingUsers, currentUser, targetUser }) {
+export function ChatPanel({ title, messages, typingUsers, currentUser, targetUser, onReply, onReplyPrivately }) {
   const messagesEndRef = useRef(null);
   const containerRef = useRef(null);
 
@@ -14,9 +14,9 @@ export function ChatPanel({ title, messages, typingUsers, currentUser, targetUse
   const isDM = !!targetUser;
 
   return (
-    <div className="flex-1 flex flex-col bg-chat-bg min-w-0">
+    <div className="flex-1 flex flex-col bg-chat-bg min-w-0 min-h-0 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-4 px-6 py-4 bg-chat-surface border-b border-chat-border">
+      <div className="flex items-center gap-4 px-6 py-4 bg-chat-surface border-b border-chat-border flex-shrink-0">
         {targetUser && (
           <img
             src={targetUser.avatar}
@@ -61,6 +61,10 @@ export function ChatPanel({ title, messages, typingUsers, currentUser, targetUse
                   message={message}
                   isOwn={isOwn}
                   showAvatar={showAvatar}
+                  onReply={onReply}
+                  onCopy={() => {}}
+                  onReplyPrivately={onReplyPrivately}
+                  isDM={isDM}
                 />
               );
             })}

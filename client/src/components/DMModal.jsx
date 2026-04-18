@@ -5,18 +5,29 @@ import { TypingIndicator } from './TypingIndicator';
 
 export function DMModal({ isOpen, targetUser, messages, typingUsers, currentUser, onSend, onClose }) {
   const messagesEndRef = React.useRef(null);
+  const [replyTo, setReplyTo] = React.useState(null);
 
   React.useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Clear reply when modal closes
+  React.useEffect(() => {
+    if (!isOpen) setReplyTo(null);
+  }, [isOpen]);
+
   if (!isOpen || !targetUser) return null;
+
+  const handleSend = (text, reply) => {
+    onSend(text, reply);
+    setReplyTo(null);
+  };
 
   return (
     <div className="fixed inset-0 z-40 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
       <div className="w-full sm:max-w-lg sm:mx-4 bg-chat-surface rounded-t-2xl sm:rounded-2xl border border-chat-border shadow-2xl animate-slide-up flex flex-col max-h-[80vh] sm:max-h-[600px]">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-chat-border">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-chat-border flex-shrink-0">
           <div className="flex items-center gap-3">
             <img
               src={targetUser.avatar}
@@ -49,7 +60,7 @@ export function DMModal({ isOpen, targetUser, messages, typingUsers, currentUser
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-40 text-gray-500">
               <svg className="w-12 h-12 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -69,6 +80,9 @@ export function DMModal({ isOpen, targetUser, messages, typingUsers, currentUser
                     message={message}
                     isOwn={isOwn}
                     showAvatar={showAvatar}
+                    onReply={(msg) => setReplyTo(msg)}
+                    onCopy={() => {}}
+                    isDM={true}
                   />
                 );
               })}
@@ -81,7 +95,13 @@ export function DMModal({ isOpen, targetUser, messages, typingUsers, currentUser
         </div>
 
         {/* Input */}
-        <MessageInput onSend={onSend} placeholder="Message..." isDM />
+        <MessageInput
+          onSend={handleSend}
+          placeholder="Message..."
+          isDM
+          replyTo={replyTo}
+          onCancelReply={() => setReplyTo(null)}
+        />
       </div>
     </div>
   );

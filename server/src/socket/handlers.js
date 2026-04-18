@@ -118,12 +118,6 @@ export function setupSocketHandlers(io) {
     // Handle global message
     socket.on(ClientEvents.MESSAGE_SEND, (data, callback) => {
       try {
-        // Rate limit check
-        if (!checkRateLimit(socket.id)) {
-          if (callback) callback({ success: false, error: 'Rate limit exceeded' });
-          return;
-        }
-
         const user = store.getUser(socket.id);
         if (!user) {
           if (callback) callback({ success: false, error: 'User not found' });
@@ -136,6 +130,16 @@ export function setupSocketHandlers(io) {
           return;
         }
 
+        // Build replyTo if provided
+        let replyTo = undefined;
+        if (data?.replyTo && data.replyTo.id && data.replyTo.username && data.replyTo.text) {
+          replyTo = {
+            id: data.replyTo.id,
+            username: sanitizeInput(data.replyTo.username),
+            text: sanitizeInput(data.replyTo.text),
+          };
+        }
+
         const message = {
           id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           userId: socket.id,
@@ -143,6 +147,7 @@ export function setupSocketHandlers(io) {
           avatar: user.avatar,
           text,
           timestamp: Date.now(),
+          ...(replyTo && { replyTo }),
         };
 
         store.addMessage(message);
@@ -229,12 +234,23 @@ export function setupSocketHandlers(io) {
           return;
         }
 
+        // Build replyTo if provided
+        let replyTo = undefined;
+        if (data?.replyTo && data.replyTo.id && data.replyTo.username && data.replyTo.text) {
+          replyTo = {
+            id: data.replyTo.id,
+            username: sanitizeInput(data.replyTo.username),
+            text: sanitizeInput(data.replyTo.text),
+          };
+        }
+
         const message = {
           id: `dm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           userId: socket.id,
           username: user.username,
           text: sanitizedText,
           timestamp: Date.now(),
+          ...(replyTo && { replyTo }),
         };
 
         store.addDMMessage(roomId, message);

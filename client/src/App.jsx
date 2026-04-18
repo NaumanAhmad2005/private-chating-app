@@ -66,6 +66,7 @@ function ChatApp() {
 
   const [showDM, setShowDM] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState({}); // Map<roomId, count>
+  const [globalReplyTo, setGlobalReplyTo] = useState(null); // Message being replied to in global chat
   const typingTimeoutRef = useRef(null);
   const activeChatsRef = useRef(activeChats);
   const activeDMRef = useRef(activeDM);
@@ -297,12 +298,19 @@ function ChatApp() {
   }, [user, socket, emit]);
 
   // Send global message
-  const handleSendMessage = (text) => {
-    emit(ClientEventsLocal.MESSAGE_SEND, { text }, (response) => {
+  const handleSendMessage = (text, replyTo) => {
+    const replyData = replyTo ? {
+      id: replyTo.id,
+      username: replyTo.username,
+      text: replyTo.text,
+    } : undefined;
+
+    emit(ClientEventsLocal.MESSAGE_SEND, { text, replyTo: replyData }, (response) => {
       if (!response?.success) {
         console.error('[App] Failed to send message:', response?.error);
       }
     });
+    setGlobalReplyTo(null);
   };
 
   // Handle user click (start DM)
@@ -341,10 +349,16 @@ function ChatApp() {
   };
 
   // Send DM message
-  const handleDMSend = (text) => {
+  const handleDMSend = (text, replyTo) => {
     if (!activeDM) return;
 
-    emit(ClientEventsLocal.DM_SEND, { roomId: activeDM.roomId, text }, (response) => {
+    const replyData = replyTo ? {
+      id: replyTo.id,
+      username: replyTo.username,
+      text: replyTo.text,
+    } : undefined;
+
+    emit(ClientEventsLocal.DM_SEND, { roomId: activeDM.roomId, text, replyTo: replyData }, (response) => {
       if (response?.success) {
         // Add the sent message locally (server no longer echoes it back to sender)
         const sentMessage = {
@@ -353,10 +367,55 @@ function ChatApp() {
           username: user.username,
           text,
           timestamp: Date.now(),
+          replyTo: replyData,
         };
         addDMMessage(activeDM.roomId, sentMessage);
       } else {
         console.error('[App] Failed to send DM:', response?.error);
+      }
+    });
+  };
+
+  // Reply privately - opens a DM with the message author and sends a reply there
+  const handleReplyPrivately = (message) => {
+    // Find the user by their userId (socketId)
+    const targetUser = users.find(u => u.socketId === message.userId);
+    if (!targetUser || targetUser.socketId === user?.socketId) return;
+
+    emit(ClientEventsLocal.DM_CREATE, { targetUserId: targetUser.socketId }, (response) => {
+      if (response?.success) {
+        openDM(response.roomId, response.targetUser);
+        // Restore messages if provided
+        if (response.messages && response.messages.length > 0) {
+          setDmMessages(prev => ({
+            ...prev,
+            [response.roomId]: response.messages,
+          }));
+        }
+        setShowDM(true);
+
+        // Now send the reply privately
+        const replyData = {
+          id: message.id,
+          username: message.username,
+          text: message.text,
+        };
+
+        emit(ClientEventsLocal.DM_SEND, { roomId: response.roomId, text: `↩️ Replying to: "${message.text.slice(0, 100)}${message.text.length > 100 ? '...' : ''}"`, replyTo: replyData }, (dmResponse) => {
+          if (dmResponse?.success) {
+            const sentMessage = {
+              id: `dm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              userId: user.socketId,
+              username: user.username,
+              text: `↩️ Replying to: "${message.text.slice(0, 100)}${message.text.length > 100 ? '...' : ''}"`,
+              timestamp: Date.now(),
+              replyTo: replyData,
+            };
+            addDMMessage(response.roomId, sentMessage);
+          }
+        });
+      } else {
+        console.error('[App] Failed to create DM for private reply:', response?.error);
       }
     });
   };
@@ -446,14 +505,20 @@ function ChatApp() {
       />
 
       {/* Main Chat Panel */}
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0">
         <ChatPanel
           title="Global Chat"
           messages={messages}
           typingUsers={typingUsers}
           currentUser={user}
+          onReply={(msg) => setGlobalReplyTo(msg)}
+          onReplyPrivately={handleReplyPrivately}
         />
-        <MessageInput onSend={handleSendMessage} />
+        <MessageInput
+          onSend={handleSendMessage}
+          replyTo={globalReplyTo}
+          onCancelReply={() => setGlobalReplyTo(null)}
+        />
       </div>
 
       {/* DM Modal */}
