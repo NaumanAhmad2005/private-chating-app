@@ -20,29 +20,20 @@ const __dirname = dirname(__filename);
 const app = express();
 const httpServer = createServer(app);
 
-// Socket.io with CORS
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',')
-  : ['http://localhost:3000', 'http://127.0.0.1:3000'];
-
+// Socket.io with CORS - allow all origins in production, specific ones in dev
 const io = new Server(httpServer, {
   cors: {
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
+    origin: process.env.NODE_ENV === 'production' ? '*' : ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    methods: ['GET', 'POST'],
     credentials: true,
   },
   pingTimeout: 60000,
   pingInterval: 25000,
 });
 
-// Middleware
+// Middleware - allow all origins in production
 app.use(cors({
-  origin: allowedOrigins,
+  origin: process.env.NODE_ENV === 'production' ? '*' : ['http://localhost:3000', 'http://127.0.0.1:3000'],
   credentials: true,
 }));
 app.use(xss()); // XSS protection
