@@ -17,6 +17,7 @@ export const ServerEvents = {
   MESSAGE_NEW: 'message:new',
   DM_CREATED: 'dm:created',
   DM_RECEIVED: 'dm:received',
+  DM_INVITED: 'dm:invited',
   DM_CLOSED: 'dm:closed',
   TYPING_UPDATE: 'typing:update',
   ERROR: 'error',

@@ -15,6 +15,15 @@ export default {
         'chat-sent':     '#3797f0',
         'chat-received': '#262626',
       },
+      keyframes: {
+        'fade-in-down': {
+          '0%': { opacity: '0', transform: 'translate(-50%, -20px)' },
+          '100%': { opacity: '1', transform: 'translate(-50%, 0)' },
+        },
+      },
+      animation: {
+        'fade-in-down': 'fade-in-down 0.3s ease-out',
+      },
     },
   },
   plugins: [],

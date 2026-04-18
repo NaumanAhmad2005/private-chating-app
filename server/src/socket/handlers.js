@@ -180,20 +180,8 @@ export function setupSocketHandlers(io) {
         // Create DM using usernames (persistent across reconnects)
         const dm = store.createDM(sender.username, target.username);
 
-        // Notify target user if they're online
-        const targetSocketId = store.getSocketIdForUsername(target.username);
-        if (targetSocketId) {
-          io.to(targetSocketId).emit(ServerEvents.DM_CREATED, {
-            roomId: dm.roomId,
-            targetUser: {
-              socketId: socket.id,
-              username: sender.username,
-              avatar: sender.avatar,
-            },
-            messages: dm.messages,
-          });
-        }
-
+        // Only respond to sender - do NOT notify target user yet
+        // Target user will be notified when first message is sent
         if (callback) callback({ success: true, roomId: dm.roomId, targetUser: target, messages: dm.messages });
       } catch (error) {
         console.error('[Socket] Error on dm:create', error);
@@ -255,16 +243,32 @@ export function setupSocketHandlers(io) {
 
         store.addDMMessage(roomId, message);
 
-        // Send only to the OTHER participant (sender handles their own message locally)
+        // Send to the OTHER participant (sender handles their own message locally)
         dm.participants.forEach(participantUsername => {
           if (participantUsername === user.username) return; // Skip sender
           const participantSocketId = store.getSocketIdForUsername(participantUsername);
           if (participantSocketId) {
-            io.to(participantSocketId).emit(ServerEvents.DM_RECEIVED, {
-              roomId,
-              message,
-              isOwn: false,
-            });
+            // Check if this is the first message in the DM (invitation)
+            const isFirstMessage = dm.messages.length === 1;
+            if (isFirstMessage) {
+              // Send DM_INVITED for first message - shows notification without opening modal
+              io.to(participantSocketId).emit(ServerEvents.DM_INVITED, {
+                roomId,
+                message,
+                sender: {
+                  socketId: socket.id,
+                  username: user.username,
+                  avatar: user.avatar,
+                },
+              });
+            } else {
+              // Subsequent messages use DM_RECEIVED
+              io.to(participantSocketId).emit(ServerEvents.DM_RECEIVED, {
+                roomId,
+                message,
+                isOwn: false,
+              });
+            }
           }
         });
 
