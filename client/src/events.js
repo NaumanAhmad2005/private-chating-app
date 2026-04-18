@@ -18,6 +18,8 @@ export const ServerEvents = {
   DM_CREATED: 'dm:created',
   DM_RECEIVED: 'dm:received',
   DM_CLOSED: 'dm:closed',
+  DM_PARTNER_LEFT: 'dm:partner:left',
+  DM_PARTNER_REJOINED: 'dm:partner:rejoined',
   TYPING_UPDATE: 'typing:update',
   ERROR: 'error',
 };

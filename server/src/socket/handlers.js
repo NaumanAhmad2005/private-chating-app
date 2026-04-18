@@ -40,9 +40,15 @@ export function setupSocketHandlers(io) {
     // Handle user joining
     socket.on(ClientEvents.JOIN, (data, callback) => {
       try {
-        const username = data?.username || generateUsername();
+        let username = data?.username || generateUsername();
         const avatarSeed = data?.avatarSeed || generateAvatarSeed();
         const avatar = `https://api.dicebear.com/9.x/avataaars/svg?seed=${avatarSeed}`;
+
+        // Ensure username is unique among connected users
+        while (store.isUsernameTaken(username)) {
+          console.log(`[Socket] Username '${username}' already taken, generating new one`);
+          username = generateUsername();
+        }
 
         // Store user
         store.addUser(socket.id, { username, avatar, avatarSeed });
@@ -233,14 +239,15 @@ export function setupSocketHandlers(io) {
 
         store.addDMMessage(roomId, message);
 
-        // Send to all online participants
-        dm.participants.forEach(username => {
-          const participantSocketId = store.getSocketIdForUsername(username);
+        // Send only to the OTHER participant (sender handles their own message locally)
+        dm.participants.forEach(participantUsername => {
+          if (participantUsername === user.username) return; // Skip sender
+          const participantSocketId = store.getSocketIdForUsername(participantUsername);
           if (participantSocketId) {
             io.to(participantSocketId).emit(ServerEvents.DM_RECEIVED, {
               roomId,
               message,
-              isOwn: username === user.username,
+              isOwn: false,
             });
           }
         });

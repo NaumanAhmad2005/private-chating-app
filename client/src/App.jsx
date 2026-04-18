@@ -65,10 +65,22 @@ function ChatApp() {
   } = useChat();
 
   const [showDM, setShowDM] = useState(false);
+  const [unreadCounts, setUnreadCounts] = useState({}); // Map<roomId, count>
   const typingTimeoutRef = useRef(null);
+  const activeChatsRef = useRef(activeChats);
+  const activeDMRef = useRef(activeDM);
 
-  // Socket event handlers
-  const handlers = {
+  // Keep refs in sync
+  useEffect(() => {
+    activeChatsRef.current = activeChats;
+  }, [activeChats]);
+
+  useEffect(() => {
+    activeDMRef.current = activeDM;
+  }, [activeDM]);
+
+  // Socket event handlers - memoized to avoid stale closures
+  const handlers = React.useMemo(() => ({
     // User joined
     [ServerEventsLocal.USER_JOINED]: ({ user: joinedUser }) => {
       console.log('[App] User joined:', joinedUser.username);
@@ -111,6 +123,12 @@ function ChatApp() {
         }));
       }
       setShowDM(true);
+      // Clear any unread count for this chat since we're opening it
+      setUnreadCounts(prev => {
+        const copy = { ...prev };
+        delete copy[roomId];
+        return copy;
+      });
     },
 
     // DM partner temporarily disconnected (but chat persists)
@@ -138,9 +156,48 @@ function ChatApp() {
     // DM received
     [ServerEventsLocal.DM_RECEIVED]: ({ roomId, message, isOwn }) => {
       addDMMessage(roomId, message);
-      // If DM is not open and not own message, show notification (future: toast)
-      if (!activeDM || activeDM.roomId !== roomId) {
+
+      // Use refs for current values
+      const currentActiveDM = activeDMRef.current;
+      const currentActiveChats = activeChatsRef.current;
+
+      // If DM is not open and this is not my own message, mark as unread and notify
+      if ((!currentActiveDM || currentActiveDM.roomId !== roomId) && !isOwn) {
         console.log('[App] DM received in closed chat:', roomId);
+
+        // Increment unread count
+        setUnreadCounts(prev => ({
+          ...prev,
+          [roomId]: (prev[roomId] || 0) + 1,
+        }));
+
+        // Add to active chats if not already present (for first-time DMs)
+        setActiveChats(prev => {
+          if (prev.find(c => c.roomId === roomId)) return prev;
+          // Extract target user from message - we'll get full info when chat is opened
+          return [...prev, {
+            roomId,
+            targetUser: {
+              username: message.username,
+              avatar: `https://api.dicebear.com/9.x/avataaars/svg?seed=${message.username}`,
+              isOnline: true,
+            },
+            lastMessage: message,
+            timestamp: message.timestamp,
+          }];
+        });
+
+        // Browser notification (if permission granted)
+        if (Notification.permission === 'granted') {
+          const chat = currentActiveChats.find(c => c.roomId === roomId);
+          const senderName = chat?.targetUser?.username || message.username || 'Someone';
+
+          new Notification('New Private Message', {
+            body: `${senderName}: ${message.text.slice(0, 50)}${message.text.length > 50 ? '...' : ''}`,
+            icon: '/vite.svg',
+            tag: roomId, // Replace existing notification for same chat
+          });
+        }
       }
     },
 
@@ -148,7 +205,7 @@ function ChatApp() {
     [ServerEventsLocal.DM_CLOSED]: ({ roomId }) => {
       console.log('[App] DM closed:', roomId);
       closeDM(roomId);
-      if (activeDM?.roomId === roomId) {
+      if (activeDMRef.current?.roomId === roomId) {
         setShowDM(false);
       }
     },
@@ -166,7 +223,20 @@ function ChatApp() {
     [ServerEventsLocal.ERROR]: ({ error }) => {
       console.error('[App] Server error:', error);
     },
-  };
+  }), [
+    addUser,
+    removeUser,
+    removeTypingUser,
+    updateUsers,
+    addGlobalMessage,
+    setInitialMessages,
+    openDM,
+    setDmMessages,
+    setActiveChats,
+    closeDM,
+    setTypingUser,
+    addDMMessage,
+  ]);
 
   const { socket, emit, connected, connectionError } = useSocket(handlers);
 
@@ -181,22 +251,13 @@ function ChatApp() {
   // Join chat after accepting rules
   useEffect(() => {
     if (hasAcceptedRules && !user && connected) {
-      // Try to get existing username from localStorage for persistence
-      const savedUsername = localStorage.getItem('chat_username');
-      const savedAvatarSeed = localStorage.getItem('chat_avatar_seed');
-
-      const username = savedUsername || generateUsername();
-      const avatarSeed = savedAvatarSeed || generateAvatarSeed();
-
-      // Save for future sessions
-      if (!savedUsername) {
-        localStorage.setItem('chat_username', username);
-        localStorage.setItem('chat_avatar_seed', avatarSeed);
-      }
+      // Always generate a fresh anonymous username for privacy
+      const username = generateUsername();
+      const avatarSeed = generateAvatarSeed();
 
       emit(ClientEventsLocal.JOIN, { username, avatarSeed }, (response) => {
         if (response?.success && response.user) {
-          // Add socketId to user for message ownership comparison
+          // Use the server-assigned username (server enforces uniqueness)
           setUser({ ...response.user, socketId: socket.id });
           console.log('[App] Joined as:', response.user.username);
 
@@ -209,14 +270,22 @@ function ChatApp() {
                 ...prev,
                 [dm.roomId]: dm.messages || [],
               }));
-              // Add to active chats
-              addOrUpdateChat(dm.roomId, dm.targetUser, dm.messages?.[dm.messages.length - 1] || null);
+              // Add to active chats - this makes them appear in the sidebar Messages tab
+              setActiveChats(prev => {
+                if (prev.find(c => c.roomId === dm.roomId)) return prev;
+                return [...prev, {
+                  roomId: dm.roomId,
+                  targetUser: dm.targetUser,
+                  lastMessage: dm.messages?.[dm.messages.length - 1] || null,
+                  timestamp: dm.messages?.[dm.messages.length - 1]?.timestamp || Date.now(),
+                }];
+              });
             });
           }
         }
       });
     }
-  }, [hasAcceptedRules, user, connected, emit, setUser, setDmMessages, addOrUpdateChat, setActiveChats]);
+  }, [hasAcceptedRules, user, connected, emit, setUser, setDmMessages, setActiveChats]);
 
   // Leave on unmount
   useEffect(() => {
@@ -263,6 +332,12 @@ function ChatApp() {
     const targetUser = users.find(u => u.username === chat.targetUser.username) || chat.targetUser;
     openDM(chat.roomId, { ...chat.targetUser, ...targetUser });
     setShowDM(true);
+    // Clear unread count for this chat
+    setUnreadCounts(prev => {
+      const copy = { ...prev };
+      delete copy[chat.roomId];
+      return copy;
+    });
   };
 
   // Send DM message
@@ -271,7 +346,7 @@ function ChatApp() {
 
     emit(ClientEventsLocal.DM_SEND, { roomId: activeDM.roomId, text }, (response) => {
       if (response?.success) {
-        // Update active chat with the sent message
+        // Add the sent message locally (server no longer echoes it back to sender)
         const sentMessage = {
           id: `dm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           userId: user.socketId,
@@ -279,7 +354,7 @@ function ChatApp() {
           text,
           timestamp: Date.now(),
         };
-        updateActiveChat(activeDM.roomId, sentMessage);
+        addDMMessage(activeDM.roomId, sentMessage);
       } else {
         console.error('[App] Failed to send DM:', response?.error);
       }
@@ -359,7 +434,7 @@ function ChatApp() {
   }
 
   return (
-    <div className="min-h-screen bg-chat-bg flex">
+    <div className="h-screen bg-chat-bg flex overflow-hidden">
       {/* Users Sidebar */}
       <UsersSidebar
         users={users}
@@ -367,10 +442,11 @@ function ChatApp() {
         onUserClick={handleUserClick}
         activeChats={activeChats}
         onChatClick={handleChatClick}
+        unreadCounts={unreadCounts}
       />
 
       {/* Main Chat Panel */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         <ChatPanel
           title="Global Chat"
           messages={messages}

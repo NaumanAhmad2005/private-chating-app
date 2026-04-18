@@ -11,8 +11,13 @@ export function useSocket(handlers = {}) {
   const [connected, setConnected] = useState(false);
   const [connectionError, setConnectionError] = useState(null);
 
-  // Update handlers ref when handlers change
+  // Always keep handlersRef up to date with the latest handlers
+  // This is the key: we use the ref inside the stable listener wrappers,
+  // so we never need to re-register socket listeners when handlers change.
   handlersRef.current = handlers;
+
+  // Track which events we've registered stable listeners for
+  const registeredEventsRef = useRef(new Set());
 
   useEffect(() => {
     setConnectionError(null);
@@ -28,9 +33,19 @@ export function useSocket(handlers = {}) {
 
     const socket = socketRef.current;
 
-    // Set up event listeners
-    Object.entries(handlersRef.current).forEach(([event, handler]) => {
-      socket.on(event, handler);
+    // Create STABLE wrapper listeners that delegate to the latest handler via ref.
+    // These never change, so we never accumulate duplicate listeners.
+    const eventNames = Object.keys(handlers);
+    const wrappers = {};
+
+    eventNames.forEach(event => {
+      wrappers[event] = (...args) => {
+        if (handlersRef.current[event]) {
+          handlersRef.current[event](...args);
+        }
+      };
+      socket.on(event, wrappers[event]);
+      registeredEventsRef.current.add(event);
     });
 
     // Connection event handlers
@@ -61,9 +76,9 @@ export function useSocket(handlers = {}) {
     return () => {
       console.log('[Socket] Cleaning up socket connection');
 
-      // Remove all listeners
-      Object.entries(handlersRef.current).forEach(([event, handler]) => {
-        socket.off(event, handler);
+      // Remove all wrapper listeners
+      Object.entries(wrappers).forEach(([event, wrapper]) => {
+        socket.off(event, wrapper);
       });
 
       socket.off('connect');
@@ -74,8 +89,9 @@ export function useSocket(handlers = {}) {
       // Disconnect socket
       socket.disconnect();
       socketRef.current = null;
+      registeredEventsRef.current.clear();
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Emit helper
   const emit = useCallback((event, data, callback) => {

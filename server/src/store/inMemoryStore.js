@@ -149,6 +149,13 @@ class InMemoryStore {
     return userDMs;
   }
 
+  // Check if a username is already taken by an online user
+  isUsernameTaken(username) {
+    const socketId = this.userSockets.get(username);
+    // Username is taken only if the socket is still connected (user is in the users map)
+    return socketId && this.users.has(socketId);
+  }
+
   // Check if a user is currently connected
   isUserConnected(usernameOrSocketId) {
     // Check by socket ID first
