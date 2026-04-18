@@ -57,25 +57,26 @@ export function MessageInput({ onSend, placeholder = 'Type a message...', isDM =
       {/* Reply Preview Bar */}
       {replyTo && (
         <div className="flex items-center gap-3 px-4 pt-3 pb-1">
-          <div className="flex-1 flex items-center gap-2 px-3 py-2 bg-chat-bg rounded-xl border-l-3 border-blue-500 min-w-0"
-               style={{ borderLeftWidth: '3px', borderLeftColor: '#3b82f6' }}>
-            <svg className="w-4 h-4 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex-1 flex items-center gap-2 px-3 py-2 bg-chat-bg rounded-xl min-w-0"
+               style={{ borderLeftWidth: '3px', borderLeftColor: 'var(--chat-primary)', borderLeftStyle: 'solid' }}>
+            <svg className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--chat-primary)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
             </svg>
             <div className="min-w-0 flex-1">
-              <span className="text-xs text-blue-400 font-medium block truncate">
+              <span className="text-xs font-medium block truncate" style={{ color: 'var(--chat-primary)' }}>
                 Replying to {replyTo.username}
               </span>
-              <span className="text-xs text-gray-400 block truncate">
-                {replyTo.text.length > 80 ? replyTo.text.slice(0, 80) + '...' : replyTo.text}
+              <span className="text-xs block truncate" style={{ color: 'var(--chat-text-muted)' }}>
+                {replyTo.text.length > 80 ? replyTo.text.slice(0, 80) + '…' : replyTo.text}
               </span>
             </div>
           </div>
           <button
             onClick={onCancelReply}
             className="p-1.5 hover:bg-chat-bg rounded-full transition-colors flex-shrink-0"
+            style={{ color: 'var(--chat-text-muted)' }}
           >
-            <svg className="w-4 h-4 text-gray-400 hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>

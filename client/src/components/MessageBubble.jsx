@@ -20,13 +20,23 @@ export function MessageBubble({ message, isOwn, showAvatar = true, onReply, onCo
     if (onCopy) onCopy(message);
   };
 
-  const handleMouseEnter = () => {
+  // Hover only on the bubble element
+  const handleBubbleEnter = () => {
     if (actionsTimeoutRef.current) clearTimeout(actionsTimeoutRef.current);
     setShowActions(true);
   };
 
-  const handleMouseLeave = () => {
-    actionsTimeoutRef.current = setTimeout(() => setShowActions(false), 300);
+  const handleBubbleLeave = () => {
+    actionsTimeoutRef.current = setTimeout(() => setShowActions(false), 200);
+  };
+
+  // Keep actions visible when hovering the action buttons themselves
+  const handleActionsEnter = () => {
+    if (actionsTimeoutRef.current) clearTimeout(actionsTimeoutRef.current);
+  };
+
+  const handleActionsLeave = () => {
+    actionsTimeoutRef.current = setTimeout(() => setShowActions(false), 200);
   };
 
   useEffect(() => {
@@ -36,11 +46,7 @@ export function MessageBubble({ message, isOwn, showAvatar = true, onReply, onCo
   }, []);
 
   return (
-    <div
-      className={`group relative flex gap-3 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
+    <div className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
       {/* Avatar */}
       {showAvatar && (
         <div className="flex-shrink-0">
@@ -56,59 +62,64 @@ export function MessageBubble({ message, isOwn, showAvatar = true, onReply, onCo
       {/* Message Content */}
       <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} max-w-[70%]`}>
         {/* Username */}
-        <span className="text-xs text-gray-400 mb-1 px-1">
+        <span className="text-xs mb-1 px-1" style={{ color: 'var(--chat-text-muted)' }}>
           {message.username}
         </span>
 
-        {/* Reply Preview (if this message is a reply) */}
+        {/* Reply Preview (if this message is a reply to another) */}
         {message.replyTo && (
-          <div className={`flex items-center gap-2 mb-1 px-3 py-1.5 rounded-xl text-xs max-w-full ${
-            isOwn
-              ? 'bg-blue-500/15 border-l-2 border-blue-400'
-              : 'bg-white/5 border-l-2 border-gray-400'
-          }`}>
+          <div className={`flex items-center gap-2 mb-1 px-3 py-1.5 rounded-xl text-xs max-w-full border-l-2 ${
+            isOwn ? 'border-chat-primary' : 'border-chat-border'
+          }`} style={{ background: 'color-mix(in srgb, var(--chat-surface) 80%, transparent)' }}>
             <div className="min-w-0">
-              <span className="text-blue-400 font-medium block truncate">
+              <span className="font-medium block truncate" style={{ color: 'var(--chat-primary)' }}>
                 {message.replyTo.username}
               </span>
-              <span className="text-gray-400 block truncate">
+              <span className="block truncate" style={{ color: 'var(--chat-text-muted)' }}>
                 {message.replyTo.text.length > 60
-                  ? message.replyTo.text.slice(0, 60) + '...'
+                  ? message.replyTo.text.slice(0, 60) + '…'
                   : message.replyTo.text}
               </span>
             </div>
           </div>
         )}
 
-        {/* Bubble */}
-        <div className="relative">
+        {/* Bubble — hover target for actions */}
+        <div
+          className="relative"
+          onMouseEnter={handleBubbleEnter}
+          onMouseLeave={handleBubbleLeave}
+        >
           <div
-            className={`px-4 py-2.5 rounded-2xl ${
+            className={`px-4 py-2.5 rounded-2xl select-text ${
               isOwn
                 ? 'bg-chat-sent text-white rounded-br-md'
-                : 'bg-chat-received text-gray-100 rounded-bl-md'
+                : 'bg-chat-received rounded-bl-md'
             }`}
+            style={!isOwn ? { color: 'var(--chat-text)' } : undefined}
           >
             <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
               {message.text}
             </p>
           </div>
 
-          {/* Hover Actions */}
+          {/* Hover Actions — appear beside the bubble only */}
           {showActions && (
             <div
-              className={`absolute top-1/2 -translate-y-1/2 flex items-center gap-0.5 z-10 animate-fade-in ${
-                isOwn ? 'right-full mr-1.5' : 'left-full ml-1.5'
+              className={`absolute top-1/2 -translate-y-1/2 flex items-center z-20 animate-fade-in ${
+                isOwn ? 'right-full mr-2' : 'left-full ml-2'
               }`}
+              onMouseEnter={handleActionsEnter}
+              onMouseLeave={handleActionsLeave}
             >
-              <div className="flex items-center gap-0.5 bg-chat-surface border border-chat-border rounded-xl px-1 py-0.5 shadow-lg">
+              <div className="flex items-center gap-0.5 bg-chat-surface border border-chat-border rounded-xl px-1 py-0.5 shadow-xl">
                 {/* Reply */}
                 <button
                   onClick={() => onReply && onReply(message)}
-                  className="p-1.5 hover:bg-chat-bg rounded-lg transition-colors group/btn"
+                  className="p-1.5 rounded-lg transition-colors hover:bg-chat-bg"
                   title="Reply"
                 >
-                  <svg className="w-4 h-4 text-gray-400 hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4" style={{ color: 'var(--chat-text-muted)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                   </svg>
                 </button>
@@ -116,28 +127,28 @@ export function MessageBubble({ message, isOwn, showAvatar = true, onReply, onCo
                 {/* Copy */}
                 <button
                   onClick={handleCopy}
-                  className="p-1.5 hover:bg-chat-bg rounded-lg transition-colors group/btn"
+                  className="p-1.5 rounded-lg transition-colors hover:bg-chat-bg"
                   title={copied ? 'Copied!' : 'Copy'}
                 >
                   {copied ? (
-                    <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   ) : (
-                    <svg className="w-4 h-4 text-gray-400 hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" style={{ color: 'var(--chat-text-muted)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                     </svg>
                   )}
                 </button>
 
-                {/* Reply Privately (only in global chat, not in DMs, and not for own messages) */}
+                {/* Reply Privately — global chat only, not own messages */}
                 {!isDM && !isOwn && onReplyPrivately && (
                   <button
                     onClick={() => onReplyPrivately(message)}
-                    className="p-1.5 hover:bg-chat-bg rounded-lg transition-colors group/btn"
+                    className="p-1.5 rounded-lg transition-colors hover:bg-chat-bg"
                     title="Reply Privately"
                   >
-                    <svg className="w-4 h-4 text-gray-400 hover:text-purple-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" style={{ color: 'var(--chat-text-muted)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
                   </button>
@@ -148,7 +159,7 @@ export function MessageBubble({ message, isOwn, showAvatar = true, onReply, onCo
         </div>
 
         {/* Timestamp */}
-        <span className="text-xs text-gray-500 mt-1 px-1">
+        <span className="text-xs mt-1 px-1" style={{ color: 'var(--chat-text-muted)' }}>
           {timeAgo(message.timestamp)}
         </span>
       </div>

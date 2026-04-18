@@ -65,8 +65,15 @@ function ChatApp() {
   } = useChat();
 
   const [showDM, setShowDM] = useState(false);
-  const [unreadCounts, setUnreadCounts] = useState({}); // Map<roomId, count>
-  const [globalReplyTo, setGlobalReplyTo] = useState(null); // Message being replied to in global chat
+  const [unreadCounts, setUnreadCounts] = useState({});
+  const [globalReplyTo, setGlobalReplyTo] = useState(null);
+  const [isDark, setIsDark] = useState(() => {
+    // Persist theme choice in localStorage
+    const saved = localStorage.getItem('chat_theme');
+    const dark = saved !== 'light';
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    return dark;
+  });
   const typingTimeoutRef = useRef(null);
   const activeChatsRef = useRef(activeChats);
   const activeDMRef = useRef(activeDM);
@@ -438,6 +445,16 @@ function ChatApp() {
     }
   };
 
+  // Toggle light / dark theme
+  const toggleTheme = () => {
+    setIsDark(prev => {
+      const next = !prev;
+      document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light');
+      localStorage.setItem('chat_theme', next ? 'dark' : 'light');
+      return next;
+    });
+  };
+
   // Handle typing
   const handleTypingStart = () => {
     emit(ClientEventsLocal.TYPING_START, { roomId: activeDM?.roomId });
@@ -462,13 +479,13 @@ function ChatApp() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold text-white mb-2">Cannot Connect to Server</h2>
-          <p className="text-gray-400 mb-6">
+          <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--chat-text)' }}>Cannot Connect to Server</h2>
+          <p className="mb-6" style={{ color: 'var(--chat-text-muted)' }}>
             {connectionError}. Make sure the server is running on port 3001.
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-chat-primary hover:bg-blue-600 text-white font-semibold rounded-xl transition-colors"
+            className="px-6 py-3 bg-chat-primary text-white font-semibold rounded-xl transition-colors hover:opacity-90"
           >
             Try Again
           </button>
@@ -483,9 +500,9 @@ function ChatApp() {
       <div className="min-h-screen bg-chat-bg flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-chat-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-gray-400 mt-4">Connecting...</p>
+          <p className="mt-4" style={{ color: 'var(--chat-text-muted)' }}>Connecting...</p>
           {!connected && (
-            <p className="text-sm text-gray-500 mt-2">Establishing connection to server...</p>
+            <p className="text-sm mt-2" style={{ color: 'var(--chat-text-muted)' }}>Establishing connection to server...</p>
           )}
         </div>
       </div>
@@ -513,6 +530,8 @@ function ChatApp() {
           currentUser={user}
           onReply={(msg) => setGlobalReplyTo(msg)}
           onReplyPrivately={handleReplyPrivately}
+          isDark={isDark}
+          onToggleTheme={toggleTheme}
         />
         <MessageInput
           onSend={handleSendMessage}

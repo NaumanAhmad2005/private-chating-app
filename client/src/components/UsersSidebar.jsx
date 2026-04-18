@@ -2,37 +2,30 @@ import React, { useState } from 'react';
 
 export function UsersSidebar({ users, currentUser, onUserClick, activeChats, onChatClick, onGeneralClick, unreadCounts = {} }) {
   const onlineUsers = users.filter(u => u.socketId !== currentUser?.socketId);
-  const [activeTab, setActiveTab] = useState('general'); // 'general' or 'dms'
+  const [activeTab, setActiveTab] = useState('general');
 
-  // Format timestamp for display
   const formatTime = (timestamp) => {
     if (!timestamp) return '';
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Truncate message text
   const truncateText = (text, maxLength = 25) => {
     if (!text) return '';
-    if (text.length <= maxLength) return text;
-    return text.slice(0, maxLength) + '...';
+    return text.length <= maxLength ? text : text.slice(0, maxLength) + '…';
   };
 
   return (
     <div className="w-72 bg-chat-surface border-r border-chat-border flex flex-col h-screen overflow-hidden">
-      {/* Tab Navigation - Small top section */}
+      {/* Tab Navigation */}
       <div className="flex border-b border-chat-border flex-shrink-0">
-        {/* General Tab */}
         <button
-          onClick={() => {
-            setActiveTab('general');
-            onGeneralClick?.();
-          }}
+          onClick={() => { setActiveTab('general'); onGeneralClick?.(); }}
           className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
             activeTab === 'general'
-              ? 'text-white bg-chat-bg border-b-2 border-chat-primary'
-              : 'text-gray-400 hover:text-gray-200 hover:bg-chat-bg/50'
+              ? 'bg-chat-bg border-b-2 border-chat-primary'
+              : 'hover:bg-chat-bg/50'
           }`}
+          style={{ color: activeTab === 'general' ? 'var(--chat-text)' : 'var(--chat-text-muted)' }}
         >
           <div className="flex items-center justify-center gap-2">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -42,14 +35,14 @@ export function UsersSidebar({ users, currentUser, onUserClick, activeChats, onC
           </div>
         </button>
 
-        {/* DMs Tab */}
         <button
           onClick={() => setActiveTab('dms')}
           className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
             activeTab === 'dms'
-              ? 'text-white bg-chat-bg border-b-2 border-chat-primary'
-              : 'text-gray-400 hover:text-gray-200 hover:bg-chat-bg/50'
+              ? 'bg-chat-bg border-b-2 border-chat-primary'
+              : 'hover:bg-chat-bg/50'
           }`}
+          style={{ color: activeTab === 'dms' ? 'var(--chat-text)' : 'var(--chat-text-muted)' }}
         >
           <div className="flex items-center justify-center gap-2">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -65,26 +58,25 @@ export function UsersSidebar({ users, currentUser, onUserClick, activeChats, onC
         </button>
       </div>
 
-      {/* Content Area - Larger section */}
+      {/* Content Area */}
       <div className="flex-1 min-h-0 flex flex-col">
-        {/* General Tab Content */}
+
+        {/* General Tab */}
         {activeTab === 'general' && (
           <div className="flex-1 overflow-y-auto">
-            {/* Online Users Section */}
             <div className="p-4 border-b border-chat-border">
-              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+              <h2 className="text-base font-semibold flex items-center gap-2" style={{ color: 'var(--chat-text)' }}>
                 <span className="relative flex h-3 w-3">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
                 </span>
                 Online Users
               </h2>
-              <p className="text-sm text-gray-400 mt-1">
+              <p className="text-xs mt-1" style={{ color: 'var(--chat-text-muted)' }}>
                 {onlineUsers.length} {onlineUsers.length === 1 ? 'person' : 'people'} online
               </p>
             </div>
 
-            {/* Users List */}
             <div className="p-2 space-y-1">
               {onlineUsers.map((user) => (
                 <button
@@ -93,24 +85,16 @@ export function UsersSidebar({ users, currentUser, onUserClick, activeChats, onC
                   className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-chat-bg transition-colors duration-150 group"
                 >
                   <div className="relative flex-shrink-0">
-                    <img
-                      src={user.avatar}
-                      alt={user.username}
-                      className="w-10 h-10 rounded-full bg-chat-border"
-                    />
+                    <img src={user.avatar} alt={user.username} className="w-10 h-10 rounded-full bg-chat-border" />
                     <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-chat-surface rounded-full"></span>
                   </div>
-
                   <div className="flex-1 text-left min-w-0">
-                    <p className="text-sm font-medium text-gray-200 truncate group-hover:text-white">
+                    <p className="text-sm font-medium truncate" style={{ color: 'var(--chat-text)' }}>
                       {user.username}
                     </p>
-                    <p className="text-xs text-gray-500">
-                      Click to message
-                    </p>
+                    <p className="text-xs" style={{ color: 'var(--chat-text-muted)' }}>Click to message</p>
                   </div>
-
-                  <svg className="w-5 h-5 text-gray-500 group-hover:text-chat-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 flex-shrink-0" style={{ color: 'var(--chat-text-muted)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                   </svg>
                 </button>
@@ -118,14 +102,14 @@ export function UsersSidebar({ users, currentUser, onUserClick, activeChats, onC
 
               {onlineUsers.length === 0 && (
                 <div className="text-center py-8">
-                  <p className="text-gray-500 text-sm">No other users online</p>
+                  <p className="text-sm" style={{ color: 'var(--chat-text-muted)' }}>No other users online</p>
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {/* DMs Tab Content */}
+        {/* DMs Tab */}
         {activeTab === 'dms' && (
           <div className="flex-1 overflow-y-auto">
             {activeChats.length > 0 ? (
@@ -137,21 +121,15 @@ export function UsersSidebar({ users, currentUser, onUserClick, activeChats, onC
                     className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-chat-bg transition-colors duration-150 group text-left"
                   >
                     <div className="relative flex-shrink-0">
-                      <img
-                        src={chat.targetUser.avatar}
-                        alt={chat.targetUser.username}
-                        className="w-10 h-10 rounded-full bg-chat-border"
-                      />
-                      {chat.targetUser.isOnline !== false ? (
-                        <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-chat-surface rounded-full"></span>
-                      ) : (
-                        <span className="absolute bottom-0 right-0 w-3 h-3 bg-gray-500 border-2 border-chat-surface rounded-full"></span>
-                      )}
+                      <img src={chat.targetUser.avatar} alt={chat.targetUser.username} className="w-10 h-10 rounded-full bg-chat-border" />
+                      <span className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-chat-surface rounded-full ${
+                        chat.targetUser.isOnline !== false ? 'bg-green-500' : 'bg-gray-500'
+                      }`}></span>
                     </div>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-gray-200 truncate group-hover:text-white">
+                        <p className="text-sm font-medium truncate" style={{ color: 'var(--chat-text)' }}>
                           {chat.targetUser.username}
                         </p>
                         {unreadCounts[chat.roomId] > 0 && (
@@ -160,51 +138,47 @@ export function UsersSidebar({ users, currentUser, onUserClick, activeChats, onC
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-gray-500 truncate">
+                      <p className="text-xs truncate" style={{ color: 'var(--chat-text-muted)' }}>
                         {truncateText(chat.lastMessage?.text) || 'No messages yet'}
                       </p>
                     </div>
 
-                    <div className="flex flex-col items-end gap-1">
+                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
                       {chat.lastMessage && (
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs" style={{ color: 'var(--chat-text-muted)' }}>
                           {formatTime(chat.lastMessage.timestamp)}
                         </span>
                       )}
                       {chat.targetUser.isOnline === false && (
-                        <span className="text-xs text-gray-600">Offline</span>
+                        <span className="text-xs" style={{ color: 'var(--chat-text-muted)' }}>Offline</span>
                       )}
                     </div>
                   </button>
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center h-40 text-gray-500 px-4">
-                <svg className="w-12 h-12 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex flex-col items-center justify-center h-40 px-4" style={{ color: 'var(--chat-text-muted)' }}>
+                <svg className="w-12 h-12 mb-2 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
                 <p className="text-sm text-center">No private messages yet</p>
-                <p className="text-xs text-center mt-1">Click on a user in General tab to start a chat</p>
+                <p className="text-xs text-center mt-1 opacity-70">Click on a user in General tab to start a chat</p>
               </div>
             )}
           </div>
         )}
       </div>
 
-      {/* Current User */}
+      {/* Current User Footer */}
       {currentUser && (
         <div className="p-4 border-t border-chat-border bg-chat-bg flex-shrink-0">
           <div className="flex items-center gap-3">
-            <img
-              src={currentUser.avatar}
-              alt={currentUser.username}
-              className="w-10 h-10 rounded-full bg-chat-border"
-            />
+            <img src={currentUser.avatar} alt={currentUser.username} className="w-10 h-10 rounded-full bg-chat-border" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-200 truncate">
+              <p className="text-sm font-medium truncate" style={{ color: 'var(--chat-text)' }}>
                 {currentUser.username}
               </p>
-              <p className="text-xs text-green-400 flex items-center gap-1">
+              <p className="text-xs text-green-500 flex items-center gap-1">
                 <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                 Online
               </p>
