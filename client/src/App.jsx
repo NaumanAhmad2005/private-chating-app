@@ -94,13 +94,17 @@ function ChatApp() {
     const updateViewportHeight = () => {
       if (window.visualViewport) {
         document.documentElement.style.setProperty('--viewport-height', `${window.visualViewport.height}px`);
+        window.scrollTo(0, 0); // Force scroll to top to prevent jumping
       } else {
         document.documentElement.style.setProperty('--viewport-height', `${window.innerHeight}px`);
       }
     };
 
+    const preventScroll = () => window.scrollTo(0, 0);
+
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', updateViewportHeight);
+      window.visualViewport.addEventListener('scroll', preventScroll);
     } else {
       window.addEventListener('resize', updateViewportHeight);
     }
@@ -110,6 +114,7 @@ function ChatApp() {
     return () => {
       if (window.visualViewport) {
         window.visualViewport.removeEventListener('resize', updateViewportHeight);
+        window.visualViewport.removeEventListener('scroll', preventScroll);
       } else {
         window.removeEventListener('resize', updateViewportHeight);
       }

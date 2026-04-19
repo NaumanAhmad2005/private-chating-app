@@ -116,7 +116,13 @@ body {
 }
 
 /* Ensure the root #app / body never exceeds the visible area */
-html, body, #root {
+html, body {
+  height: 100%;
+  overflow: hidden;
+  touch-action: none; /* Prevent native pull-to-refresh and bounce */
+}
+
+#root {
   height: 100%;
   max-height: var(--viewport-height, 100dvh);
   overflow: hidden;
