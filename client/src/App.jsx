@@ -89,6 +89,33 @@ function ChatApp() {
     activeDMRef.current = activeDM;
   }, [activeDM]);
 
+  // Fix mobile viewport height when virtual keyboard opens
+  useEffect(() => {
+    const updateViewportHeight = () => {
+      if (window.visualViewport) {
+        document.documentElement.style.setProperty('--viewport-height', `${window.visualViewport.height}px`);
+      } else {
+        document.documentElement.style.setProperty('--viewport-height', `${window.innerHeight}px`);
+      }
+    };
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', updateViewportHeight);
+    } else {
+      window.addEventListener('resize', updateViewportHeight);
+    }
+    
+    updateViewportHeight();
+    
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', updateViewportHeight);
+      } else {
+        window.removeEventListener('resize', updateViewportHeight);
+      }
+    };
+  }, []);
+
   // Socket event handlers - memoized to avoid stale closures
   const handlers = React.useMemo(() => ({
     // User joined

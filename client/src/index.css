@@ -112,13 +112,13 @@ body {
 .h-app-screen {
   /* Fallback for browsers without dvh support */
   height: 100vh;
-  height: 100dvh;
+  height: var(--viewport-height, 100dvh);
 }
 
 /* Ensure the root #app / body never exceeds the visible area */
 html, body, #root {
   height: 100%;
-  max-height: 100dvh;
+  max-height: var(--viewport-height, 100dvh);
   overflow: hidden;
 }
 
