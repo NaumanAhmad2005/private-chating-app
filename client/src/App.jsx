@@ -591,11 +591,11 @@ function ChatApp() {
   }
 
   return (
-    <div className="h-app-screen bg-chat-bg flex overflow-hidden">
+    <div className="h-app-screen bg-chat-bg flex overflow-hidden sm:p-4 sm:gap-4 relative">
       {/* DM Invitation Toast Notification */}
       {dmInvitation && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-sm">
-          <div className="bg-chat-primary text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-sm">
+          <div className="bg-chat-primary text-white px-5 py-4 rounded-3xl shadow-2xl flex items-center gap-4 animate-slide-up ring-4 ring-chat-primary/20">
             <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z"/>
@@ -613,7 +613,7 @@ function ChatApp() {
                 handleChatClick({ roomId: dmInvitation.roomId, targetUser: { username: dmInvitation.senderUsername } });
                 setDmInvitation(null);
               }}
-              className="flex-shrink-0 px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg text-xs transition-colors"
+              className="flex-shrink-0 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-2xl text-xs font-medium transition-all active:scale-95"
             >
               Open
             </button>
@@ -634,7 +634,7 @@ function ChatApp() {
             Mobile:  slide-in drawer from left, hidden by default
       ─────────────────────────────────────────────────── */}
       <div className={`
-        fixed inset-y-0 left-0 z-40 transition-transform duration-300 ease-in-out
+        absolute inset-y-0 left-0 z-40 transition-transform duration-300 ease-in-out
         md:relative md:translate-x-0 md:z-auto md:flex-shrink-0
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
@@ -650,7 +650,7 @@ function ChatApp() {
       </div>
 
       {/* ── Main Chat Panel ── */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-0">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-chat-surface sm:rounded-3xl sm:shadow-2xl sm:border border-chat-border overflow-hidden">
         <ChatPanel
           title="Global Chat"
           messages={messages}
@@ -682,22 +682,22 @@ function ChatApp() {
 
       {/* ── Disconnected Overlay ── */}
       {!connected && user && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-chat-surface p-6 rounded-2xl shadow-2xl border border-red-500/30 max-w-sm mx-4 text-center">
-            <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-chat-surface p-8 rounded-[2rem] shadow-2xl border border-red-500/30 max-w-sm mx-4 text-center">
+            <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-6 ring-8 ring-red-500/5">
+              <svg className="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
-            <h3 className="text-xl font-semibold text-white mb-2">Disconnected</h3>
-            <p className="text-sm text-gray-400 mb-6">
+            <h3 className="text-2xl font-bold text-white mb-3">Disconnected</h3>
+            <p className="text-sm text-gray-400 mb-8 leading-relaxed">
               You have lost connection to the server. Please click the button below to reconnect.
             </p>
             <button
               onClick={() => window.location.reload()}
-              className="w-full py-3 bg-chat-primary hover:bg-blue-600 text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-blue-500/25 active:scale-95"
+              className="w-full py-4 bg-chat-primary hover:bg-blue-600 text-white font-bold rounded-2xl transition-all shadow-lg hover:shadow-blue-500/25 active:scale-95"
             >
-              Reconnect
+              Reconnect Now
             </button>
           </div>
         </div>

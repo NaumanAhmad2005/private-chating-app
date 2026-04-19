@@ -15,9 +15,9 @@ export function UsersSidebar({ users, currentUser, onUserClick, activeChats, onC
   };
 
   return (
-    <div className="w-72 sm:w-72 bg-chat-surface border-r border-chat-border flex flex-col h-screen overflow-hidden">
+    <div className="w-72 sm:w-80 bg-chat-surface border-r sm:border border-chat-border flex flex-col h-full sm:rounded-3xl sm:shadow-2xl overflow-hidden">
       {/* Tab Navigation */}
-      <div className="flex items-center border-b border-chat-border flex-shrink-0">
+      <div className="h-16 flex items-center border-b border-chat-border flex-shrink-0">
         <button
           onClick={() => { setActiveTab('general'); onGeneralClick?.(); }}
           className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
