@@ -230,11 +230,21 @@ function ChatApp() {
           }];
         });
 
+        // ── In-app banner notification ──────────────────────────────────
+        const chat = currentActiveChats.find(c => c.roomId === roomId);
+        const senderName = chat?.targetUser?.username || message.username || 'Someone';
+
+        setDmInvitation({
+          roomId,
+          senderUsername: senderName,
+          messageText: message.text,
+        });
+        // Auto-dismiss after 3 seconds
+        setTimeout(() => setDmInvitation(null), 3000);
+        // ───────────────────────────────────────────────────────────────
+
         // Browser notification (if permission granted)
         if (Notification.permission === 'granted') {
-          const chat = currentActiveChats.find(c => c.roomId === roomId);
-          const senderName = chat?.targetUser?.username || message.username || 'Someone';
-
           new Notification('New Private Message', {
             body: `${senderName}: ${message.text.slice(0, 50)}${message.text.length > 50 ? '...' : ''}`,
             icon: '/vite.svg',
@@ -243,6 +253,7 @@ function ChatApp() {
         }
       }
     },
+
 
     // DM closed
     [ServerEventsLocal.DM_CLOSED]: ({ roomId }) => {
