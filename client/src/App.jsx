@@ -507,7 +507,7 @@ function ChatApp() {
   // Show connection error
   if (connectionError) {
     return (
-      <div className="min-h-screen bg-chat-bg flex items-center justify-center">
+      <div className="h-app-screen bg-chat-bg flex items-center justify-center">
         <div className="text-center max-w-md mx-4">
           <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -532,7 +532,7 @@ function ChatApp() {
   // Show loading state
   if (!user) {
     return (
-      <div className="min-h-screen bg-chat-bg flex items-center justify-center">
+      <div className="h-app-screen bg-chat-bg flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-chat-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
           <p className="mt-4" style={{ color: 'var(--chat-text-muted)' }}>Connecting...</p>
@@ -545,7 +545,7 @@ function ChatApp() {
   }
 
   return (
-    <div className="h-screen bg-chat-bg flex overflow-hidden">
+    <div className="h-app-screen bg-chat-bg flex overflow-hidden">
       {/* DM Invitation Toast Notification */}
       {dmInvitation && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-sm">

@@ -24,7 +24,7 @@ export function DMModal({ isOpen, targetUser, messages, typingUsers, currentUser
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex flex-col sm:items-center sm:justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-40 flex flex-col sm:items-center sm:justify-center bg-black/60 backdrop-blur-sm animate-fade-in" style={{ height: '100dvh' }}>
       <div className="w-full h-full sm:h-auto sm:max-w-lg sm:mx-4 bg-chat-surface sm:rounded-2xl border-0 sm:border border-chat-border shadow-2xl animate-slide-up flex flex-col sm:max-h-[600px]">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-chat-border flex-shrink-0">

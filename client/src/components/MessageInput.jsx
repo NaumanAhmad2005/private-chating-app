@@ -1,8 +1,39 @@
 import React, { useState, useRef, useEffect } from 'react';
 
+// Common emoji categories for the picker
+const EMOJI_GROUPS = [
+  {
+    label: '😊 Smileys',
+    emojis: ['😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶'],
+  },
+  {
+    label: '👋 Gestures',
+    emojis: ['👋','🤚','🖐️','✋','🖖','👌','🤌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏'],
+  },
+  {
+    label: '❤️ Hearts',
+    emojis: ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','☮️','✝️','☪️','🕉️','✡️','🔯'],
+  },
+  {
+    label: '🎉 Celebration',
+    emojis: ['🎉','🎊','🎈','🎁','🎀','🪄','🎭','🎨','🖼️','🎬','🎤','🎧','🎵','🎶','🎷','🎸','🥁','🎹','🎺','🎻','🪕','🎮','🕹️','🎲'],
+  },
+  {
+    label: '🐶 Animals',
+    emojis: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🙈','🙉','🙊','🐔','🐧','🐦','🐤','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄'],
+  },
+  {
+    label: '🍕 Food',
+    emojis: ['🍕','🍔','🌮','🌯','🥗','🥘','🍜','🍱','🍣','🍩','🍪','🎂','🍰','🍫','🍬','🍭','🍦','🧁','🥧','🍡','🧋','☕','🍵','🧃','🥤','🍺','🍻','🥂','🍷','🥃'],
+  },
+];
+
 export function MessageInput({ onSend, placeholder = 'Type a message...', isDM = false, replyTo = null, onCancelReply = null }) {
   const [text, setText] = useState('');
+  const [showEmoji, setShowEmoji] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
   const inputRef = useRef(null);
+  const emojiRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const lastEmitRef = useRef(null);
 
@@ -11,6 +42,7 @@ export function MessageInput({ onSend, placeholder = 'Type a message...', isDM =
       onSend(text.trim(), replyTo);
       setText('');
       if (onCancelReply) onCancelReply();
+      setShowEmoji(false);
       inputRef.current?.focus();
     }
   };
@@ -20,8 +52,9 @@ export function MessageInput({ onSend, placeholder = 'Type a message...', isDM =
       e.preventDefault();
       handleSend();
     }
-    if (e.key === 'Escape' && replyTo && onCancelReply) {
-      onCancelReply();
+    if (e.key === 'Escape') {
+      if (showEmoji) { setShowEmoji(false); return; }
+      if (replyTo && onCancelReply) onCancelReply();
     }
   };
 
@@ -36,6 +69,32 @@ export function MessageInput({ onSend, placeholder = 'Type a message...', isDM =
       lastEmitRef.current = null;
     }, 1000);
   };
+
+  const insertEmoji = (emoji) => {
+    const el = inputRef.current;
+    if (!el) return;
+    const start = el.selectionStart ?? text.length;
+    const end = el.selectionEnd ?? text.length;
+    const newText = text.slice(0, start) + emoji + text.slice(end);
+    setText(newText);
+    // Restore cursor after emoji
+    setTimeout(() => {
+      el.focus();
+      el.setSelectionRange(start + emoji.length, start + emoji.length);
+    }, 0);
+  };
+
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    if (!showEmoji) return;
+    const handler = (e) => {
+      if (emojiRef.current && !emojiRef.current.contains(e.target)) {
+        setShowEmoji(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showEmoji]);
 
   // Focus input when reply is set
   useEffect(() => {
@@ -53,7 +112,7 @@ export function MessageInput({ onSend, placeholder = 'Type a message...', isDM =
   }, []);
 
   return (
-    <div className="bg-chat-surface border-t border-chat-border flex-shrink-0">
+    <div className="bg-chat-surface border-t border-chat-border flex-shrink-0 relative">
       {/* Reply Preview Bar */}
       {replyTo && (
         <div className="flex items-center gap-3 px-4 pt-3 pb-1">
@@ -83,8 +142,69 @@ export function MessageInput({ onSend, placeholder = 'Type a message...', isDM =
         </div>
       )}
 
+      {/* Emoji Picker — desktop only (hidden on mobile, mobile has system keyboard) */}
+      {showEmoji && (
+        <div
+          ref={emojiRef}
+          className="absolute bottom-full mb-2 left-2 right-2 sm:left-auto sm:right-auto sm:w-80 bg-chat-surface border border-chat-border rounded-2xl shadow-2xl z-50 overflow-hidden"
+          style={{ maxHeight: '320px' }}
+        >
+          {/* Category Tabs */}
+          <div className="flex overflow-x-auto scrollbar-hide border-b border-chat-border">
+            {EMOJI_GROUPS.map((group, i) => (
+              <button
+                key={i}
+                onClick={() => setActiveTab(i)}
+                className={`flex-shrink-0 px-3 py-2 text-sm transition-colors ${
+                  activeTab === i
+                    ? 'border-b-2 border-chat-primary text-chat-primary'
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+                title={group.label}
+              >
+                {group.label.split(' ')[0]}
+              </button>
+            ))}
+          </div>
+          {/* Emoji Grid */}
+          <div className="p-3 overflow-y-auto" style={{ maxHeight: '240px' }}>
+            <div className="grid grid-cols-8 gap-0.5">
+              {EMOJI_GROUPS[activeTab].emojis.map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => insertEmoji(emoji)}
+                  className="text-xl p-1.5 hover:bg-chat-bg rounded-lg transition-colors leading-none"
+                  title={emoji}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Input Row */}
       <div className="flex items-end gap-2 sm:gap-3 p-3 sm:p-4">
+        {/* Emoji Button — desktop only */}
+        <button
+          onClick={() => setShowEmoji(prev => !prev)}
+          className={`hidden sm:flex flex-shrink-0 w-10 h-10 rounded-full items-center justify-center transition-all duration-200 ${
+            showEmoji
+              ? 'bg-chat-primary text-white'
+              : 'bg-chat-bg border border-chat-border hover:border-chat-primary'
+          }`}
+          title="Emoji"
+          aria-label="Open emoji picker"
+        >
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="10" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M8 13.5s1.5 2 4 2 4-2 4-2" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <circle cx="9" cy="9.5" r="1" fill="currentColor" />
+            <circle cx="15" cy="9.5" r="1" fill="currentColor" />
+          </svg>
+        </button>
+
         {/* Input */}
         <div className="flex-1 relative">
           <textarea
