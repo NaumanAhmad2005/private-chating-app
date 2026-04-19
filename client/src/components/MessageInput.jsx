@@ -189,19 +189,19 @@ export function MessageInput({ onSend, placeholder = 'Type a message...', isDM =
         {/* Emoji Button — desktop only */}
         <button
           onClick={() => setShowEmoji(prev => !prev)}
-          className={`hidden sm:flex flex-shrink-0 w-10 h-10 rounded-full items-center justify-center transition-all duration-200 ${
+          className={`hidden sm:flex flex-shrink-0 w-12 h-12 rounded-full items-center justify-center transition-all duration-200 ${
             showEmoji
-              ? 'bg-chat-primary text-white'
-              : 'bg-chat-bg border border-chat-border hover:border-chat-primary'
+              ? 'bg-yellow-400 text-gray-900 shadow-lg shadow-yellow-400/20'
+              : 'bg-chat-bg border border-chat-border hover:border-yellow-400/50 text-yellow-500'
           }`}
           title="Emoji"
           aria-label="Open emoji picker"
         >
-          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <circle cx="12" cy="12" r="10" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M8 13.5s1.5 2 4 2 4-2 4-2" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            <circle cx="9" cy="9.5" r="1" fill="currentColor" />
-            <circle cx="15" cy="9.5" r="1" fill="currentColor" />
+            <circle cx="9" cy="9.5" r="1.5" fill="currentColor" />
+            <circle cx="15" cy="9.5" r="1.5" fill="currentColor" />
           </svg>
         </button>
 
