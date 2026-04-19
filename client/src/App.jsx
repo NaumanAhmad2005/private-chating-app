@@ -172,6 +172,9 @@ function ChatApp() {
     [ServerEventsLocal.DM_INVITED]: ({ roomId, message, sender }) => {
       console.log('[App] DM invitation from:', sender.username);
 
+      // Add the initial message to the chat
+      addDMMessage(roomId, message);
+
       // Add to active chats
       setActiveChats(prev => {
         if (prev.find(c => c.roomId === roomId)) return prev;
@@ -195,10 +198,10 @@ function ChatApp() {
         messageText: message.text,
       });
 
-      // Auto-dismiss after 3 seconds
+      // Auto-dismiss after 5 seconds
       setTimeout(() => {
         setDmInvitation(null);
-      }, 3000);
+      }, 5000);
     },
 
     // DM partner temporarily disconnected (but chat persists)
@@ -266,8 +269,8 @@ function ChatApp() {
           senderUsername: senderName,
           messageText: message.text,
         });
-        // Auto-dismiss after 3 seconds
-        setTimeout(() => setDmInvitation(null), 3000);
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => setDmInvitation(null), 5000);
         // ───────────────────────────────────────────────────────────────
 
         // Browser notification (if permission granted)
