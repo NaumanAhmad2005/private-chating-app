@@ -17,51 +17,51 @@ export function UsersSidebar({ users, currentUser, onUserClick, activeChats, onC
   return (
     <div className="w-72 sm:w-80 bg-chat-surface border-r sm:border border-chat-border flex flex-col h-full sm:rounded-3xl sm:shadow-2xl overflow-hidden">
       {/* Tab Navigation */}
-      <div className="h-16 flex items-center border-b border-chat-border flex-shrink-0">
-        <button
-          onClick={() => { setActiveTab('general'); onGeneralClick?.(); }}
-          className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
-            activeTab === 'general'
-              ? 'bg-chat-bg border-b-2 border-chat-primary'
-              : 'hover:bg-chat-bg/50'
-          }`}
-          style={{ color: activeTab === 'general' ? 'var(--chat-text)' : 'var(--chat-text-muted)' }}
-        >
-          <div className="flex items-center justify-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            General
-          </div>
-        </button>
+      <div className="h-16 flex items-center justify-center border-b border-chat-border flex-shrink-0 px-3 sm:px-4">
+        <div className="flex w-full bg-chat-bg p-1 rounded-2xl border border-chat-border shadow-inner">
+          <button
+            onClick={() => { setActiveTab('general'); onGeneralClick?.(); }}
+            className={`flex-1 py-1.5 px-2 text-sm font-semibold rounded-[0.85rem] transition-all duration-200 ${
+              activeTab === 'general'
+                ? 'bg-chat-surface shadow-md border border-chat-border/50 text-chat-primary'
+                : 'text-gray-500 hover:text-gray-400'
+            }`}
+          >
+            <div className="flex items-center justify-center gap-1.5">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              General
+            </div>
+          </button>
 
-        <button
-          onClick={() => setActiveTab('dms')}
-          className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
-            activeTab === 'dms'
-              ? 'bg-chat-bg border-b-2 border-chat-primary'
-              : 'hover:bg-chat-bg/50'
-          }`}
-          style={{ color: activeTab === 'dms' ? 'var(--chat-text)' : 'var(--chat-text-muted)' }}
-        >
-          <div className="flex items-center justify-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-            </svg>
-            Messages
-            {activeChats.length > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 text-xs bg-chat-primary text-white rounded-full min-w-[1.25rem] text-center">
-                {activeChats.length}
-              </span>
-            )}
-          </div>
-        </button>
+          <button
+            onClick={() => setActiveTab('dms')}
+            className={`flex-1 py-1.5 px-2 text-sm font-semibold rounded-[0.85rem] transition-all duration-200 ${
+              activeTab === 'dms'
+                ? 'bg-chat-surface shadow-md border border-chat-border/50 text-chat-primary'
+                : 'text-gray-500 hover:text-gray-400'
+            }`}
+          >
+            <div className="flex items-center justify-center gap-1.5">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+              Messages
+              {activeChats.length > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 text-xs bg-chat-primary text-white rounded-full min-w-[1.25rem] text-center shadow-sm">
+                  {activeChats.length}
+                </span>
+              )}
+            </div>
+          </button>
+        </div>
 
         {/* Mobile close button — only shown on small screens */}
         {onClose && (
           <button
             onClick={onClose}
-            className="md:hidden flex-shrink-0 p-3 hover:bg-chat-bg transition-colors"
+            className="md:hidden flex-shrink-0 ml-2 p-1.5 rounded-xl hover:bg-chat-bg transition-colors border border-transparent hover:border-chat-border"
             aria-label="Close sidebar"
           >
             <svg className="w-5 h-5" style={{ color: 'var(--chat-text-muted)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
