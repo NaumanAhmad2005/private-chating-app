@@ -43,14 +43,53 @@ export function MessageInput({ onSend, placeholder = 'Type a message...', isDM =
     const file = e.target.files[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      alert("Image is too large. Please select an image under 2MB.");
+    // Allow up to 15MB for initial selection, then compress
+    if (file.size > 15 * 1024 * 1024) {
+      alert("Image is too large. Please select an image under 15MB.");
       return;
     }
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      setSelectedImage(event.target.result);
+      const img = new Image();
+      img.onload = () => {
+        // Create canvas for resizing
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 1200;
+        const MAX_HEIGHT = 1200;
+        let width = img.width;
+        let height = img.height;
+
+        // Calculate new dimensions maintaining aspect ratio
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height = Math.round((height * MAX_WIDTH) / width);
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width = Math.round((width * MAX_HEIGHT) / height);
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Compress to JPEG with 70% quality
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+
+        // Final sanity check for payload size (3 million characters)
+        if (compressedBase64.length > 3000000) {
+          alert("Image is still too large after compression. Please try a different image.");
+          return;
+        }
+
+        setSelectedImage(compressedBase64);
+      };
+      img.src = event.target.result;
     };
     reader.readAsDataURL(file);
     e.target.value = ''; // Reset input
