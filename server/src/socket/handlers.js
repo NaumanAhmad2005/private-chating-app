@@ -222,7 +222,6 @@ export function setupSocketHandlers(io) {
         }
 
         const sanitizedText = sanitizeInput(text);
-        const image = data?.image;
         const isValidImage = typeof image === 'string' && image.startsWith('data:image/') && image.length < 3000000;
 
         if (!sanitizedText && !isValidImage) {
