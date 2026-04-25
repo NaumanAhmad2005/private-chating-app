@@ -7,6 +7,7 @@ import { ChatPanel } from './components/ChatPanel';
 import { MessageInput } from './components/MessageInput';
 import { DMModal } from './components/DMModal';
 import { generateUsername, generateAvatarSeed } from './utils/usernameGenerator';
+import { generateKeyPair, deriveSharedSecret, getGlobalSharedSecret, encryptText, decryptText } from './utils/encryption';
 import { ClientEvents, ServerEvents } from './events';
 
 // Socket event constants (client-side)
@@ -81,6 +82,38 @@ function ChatApp() {
   const activeChatsRef = useRef(activeChats);
   const activeDMRef = useRef(activeDM);
 
+  // E2EE Keys state
+  const [keyPair, setKeyPair] = useState(null);
+  const keyPairRef = useRef(null);
+  const sharedSecretsRef = useRef(new Map());
+  const globalSecretRef = useRef(null);
+
+  useEffect(() => {
+    generateKeyPair().then(kp => {
+      keyPairRef.current = kp;
+      setKeyPair(kp);
+    }).catch(console.error);
+
+    getGlobalSharedSecret().then(secret => {
+      globalSecretRef.current = secret;
+    }).catch(console.error);
+  }, []);
+
+  const getSharedSecret = async (targetUsername, targetPublicKeyJwk) => {
+    if (!targetPublicKeyJwk || !keyPairRef.current) return null;
+    if (sharedSecretsRef.current.has(targetUsername)) {
+      return sharedSecretsRef.current.get(targetUsername);
+    }
+    try {
+      const secret = await deriveSharedSecret(keyPairRef.current.privateKey, targetPublicKeyJwk);
+      sharedSecretsRef.current.set(targetUsername, secret);
+      return secret;
+    } catch (err) {
+      console.error("[App] Failed to derive shared secret for", targetUsername, err);
+      return null;
+    }
+  };
+
   // Keep refs in sync
   useEffect(() => {
     activeChatsRef.current = activeChats;
@@ -146,10 +179,20 @@ function ChatApp() {
     },
 
     // New global message
-    [ServerEventsLocal.MESSAGE_NEW]: ({ message, messages: initialMessages }) => {
+    [ServerEventsLocal.MESSAGE_NEW]: async ({ message, messages: initialMessages }) => {
       if (message) {
+        if (globalSecretRef.current) {
+          if (message.text) message.text = await decryptText(message.text, globalSecretRef.current);
+          if (message.image) message.image = await decryptText(message.image, globalSecretRef.current);
+        }
         addGlobalMessage(message);
       } else if (initialMessages) {
+        if (globalSecretRef.current) {
+          for (const msg of initialMessages) {
+            if (msg.text) msg.text = await decryptText(msg.text, globalSecretRef.current);
+            if (msg.image) msg.image = await decryptText(msg.image, globalSecretRef.current);
+          }
+        }
         setInitialMessages(initialMessages);
       }
     },
@@ -175,8 +218,14 @@ function ChatApp() {
     },
 
     // DM invitation - first message received, show toast notification (don't auto-open modal)
-    [ServerEventsLocal.DM_INVITED]: ({ roomId, message, sender }) => {
+    [ServerEventsLocal.DM_INVITED]: async ({ roomId, message, sender }) => {
       console.log('[App] DM invitation from:', sender.username);
+
+      const secret = await getSharedSecret(sender.username, sender.publicKeyJwk);
+      if (secret) {
+        if (message.text) message.text = await decryptText(message.text, secret);
+        if (message.image) message.image = await decryptText(message.image, secret);
+      }
 
       // Add the initial message to the chat
       addDMMessage(roomId, message);
@@ -233,7 +282,13 @@ function ChatApp() {
     },
 
     // DM received
-    [ServerEventsLocal.DM_RECEIVED]: ({ roomId, message, isOwn }) => {
+    [ServerEventsLocal.DM_RECEIVED]: async ({ roomId, message, isOwn, senderPublicKeyJwk }) => {
+      const secret = await getSharedSecret(message.username, senderPublicKeyJwk);
+      if (secret) {
+        if (message.text) message.text = await decryptText(message.text, secret);
+        if (message.image) message.image = await decryptText(message.image, secret);
+      }
+
       addDMMessage(roomId, message);
 
       // Use refs for current values
@@ -346,7 +401,7 @@ function ChatApp() {
       const username = generateUsername();
       const avatarSeed = generateAvatarSeed();
 
-      emit(ClientEventsLocal.JOIN, { username, avatarSeed }, (response) => {
+      emit(ClientEventsLocal.JOIN, { username, avatarSeed, publicKeyJwk: keyPairRef.current?.publicKeyJwk }, async (response) => {
         if (response?.success && response.user) {
           // Use the server-assigned username (server enforces uniqueness)
           setUser({ ...response.user, socketId: socket.id });
@@ -355,7 +410,16 @@ function ChatApp() {
           // Restore recovered DMs if any
           if (response.recoveredDMs && response.recoveredDMs.length > 0) {
             console.log('[App] Restoring', response.recoveredDMs.length, 'DMs');
-            response.recoveredDMs.forEach(dm => {
+            
+            for (const dm of response.recoveredDMs) {
+              const secret = await getSharedSecret(dm.targetUser.username, dm.targetUser.publicKeyJwk);
+              if (secret && dm.messages) {
+                for (const msg of dm.messages) {
+                  if (msg.text) msg.text = await decryptText(msg.text, secret);
+                  if (msg.image) msg.image = await decryptText(msg.image, secret);
+                }
+              }
+
               // Restore messages
               setDmMessages(prev => ({
                 ...prev,
@@ -371,7 +435,7 @@ function ChatApp() {
                   timestamp: dm.messages?.[dm.messages.length - 1]?.timestamp || Date.now(),
                 }];
               });
-            });
+            }
           }
         }
       });
@@ -388,14 +452,22 @@ function ChatApp() {
   }, [user, socket, emit]);
 
   // Send global message
-  const handleSendMessage = (text, replyTo, image) => {
+  const handleSendMessage = async (text, replyTo, image) => {
+    let cipherText = text;
+    let cipherImage = image;
+
+    if (globalSecretRef.current) {
+      if (text) cipherText = await encryptText(text, globalSecretRef.current);
+      if (image) cipherImage = await encryptText(image, globalSecretRef.current);
+    }
+
     const replyData = replyTo ? {
       id: replyTo.id,
       username: replyTo.username,
       text: replyTo.text,
     } : undefined;
 
-    emit(ClientEventsLocal.MESSAGE_SEND, { text, replyTo: replyData, image }, (response) => {
+    emit(ClientEventsLocal.MESSAGE_SEND, { text: cipherText, replyTo: replyData, image: cipherImage }, (response) => {
       if (!response?.success) {
         console.error('[App] Failed to send message:', response?.error);
       }
@@ -439,8 +511,17 @@ function ChatApp() {
   };
 
   // Send DM message
-  const handleDMSend = (text, replyTo, image) => {
+  const handleDMSend = async (text, replyTo, image) => {
     if (!activeDM) return;
+
+    let cipherText = text;
+    let cipherImage = image;
+
+    const secret = await getSharedSecret(activeDM.targetUser.username, activeDM.targetUser.publicKeyJwk);
+    if (secret) {
+      if (text) cipherText = await encryptText(text, secret);
+      if (image) cipherImage = await encryptText(image, secret);
+    }
 
     const replyData = replyTo ? {
       id: replyTo.id,
@@ -448,7 +529,7 @@ function ChatApp() {
       text: replyTo.text,
     } : undefined;
 
-    emit(ClientEventsLocal.DM_SEND, { roomId: activeDM.roomId, text, replyTo: replyData, image }, (response) => {
+    emit(ClientEventsLocal.DM_SEND, { roomId: activeDM.roomId, text: cipherText, replyTo: replyData, image: cipherImage }, (response) => {
       if (response?.success) {
         // Add the sent message locally (server no longer echoes it back to sender)
         const sentMessage = {
@@ -491,18 +572,43 @@ function ChatApp() {
           username: message.username,
           text: message.text,
         };
-
-        emit(ClientEventsLocal.DM_SEND, { roomId: response.roomId, text: `↩️ Replying to: "${message.text.slice(0, 100)}${message.text.length > 100 ? '...' : ''}"`, replyTo: replyData }, (dmResponse) => {
-          if (dmResponse?.success) {
-            const sentMessage = {
-              id: `dm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-              userId: user.socketId,
-              username: user.username,
-              text: `↩️ Replying to: "${message.text.slice(0, 100)}${message.text.length > 100 ? '...' : ''}"`,
-              timestamp: Date.now(),
-              replyTo: replyData,
-            };
-            addDMMessage(response.roomId, sentMessage);
+        
+        let textToSend = `↩️ Replying to: "${message.text.slice(0, 100)}${message.text.length > 100 ? '...' : ''}"`;
+        let cipherText = textToSend;
+        
+        // Wait, handleReplyPrivately might not have targetUser.publicKeyJwk immediately since it's fetched from 'users'
+        // TargetUser is found from users list, so it should have publicKeyJwk if they are online.
+        getSharedSecret(targetUser.username, targetUser.publicKeyJwk).then(secret => {
+          if (secret) {
+            encryptText(textToSend, secret).then(encrypted => {
+              emit(ClientEventsLocal.DM_SEND, { roomId: response.roomId, text: encrypted, replyTo: replyData }, (dmResponse) => {
+                if (dmResponse?.success) {
+                  const sentMessage = {
+                    id: `dm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    userId: user.socketId,
+                    username: user.username,
+                    text: textToSend,
+                    timestamp: Date.now(),
+                    replyTo: replyData,
+                  };
+                  addDMMessage(response.roomId, sentMessage);
+                }
+              });
+            });
+          } else {
+              emit(ClientEventsLocal.DM_SEND, { roomId: response.roomId, text: cipherText, replyTo: replyData }, (dmResponse) => {
+                if (dmResponse?.success) {
+                  const sentMessage = {
+                    id: `dm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    userId: user.socketId,
+                    username: user.username,
+                    text: textToSend,
+                    timestamp: Date.now(),
+                    replyTo: replyData,
+                  };
+                  addDMMessage(response.roomId, sentMessage);
+                }
+              });
           }
         });
       } else {

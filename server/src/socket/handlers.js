@@ -43,6 +43,7 @@ export function setupSocketHandlers(io) {
         let username = data?.username || generateUsername();
         const avatarSeed = data?.avatarSeed || generateAvatarSeed();
         const avatar = `https://api.dicebear.com/9.x/avataaars/svg?seed=${avatarSeed}`;
+        const publicKeyJwk = data?.publicKeyJwk;
 
         // Ensure username is unique among connected users
         while (store.isUsernameTaken(username)) {
@@ -51,7 +52,7 @@ export function setupSocketHandlers(io) {
         }
 
         // Store user
-        store.addUser(socket.id, { username, avatar, avatarSeed });
+        store.addUser(socket.id, { username, avatar, avatarSeed, publicKeyJwk });
 
         // Send user their info
         const user = store.getUser(socket.id);
@@ -76,7 +77,8 @@ export function setupSocketHandlers(io) {
               targetUser: otherUser || {
                 username: otherParticipant,
                 avatar: `https://api.dicebear.com/9.x/avataaars/svg?seed=${otherParticipant}`,
-                isOnline: otherOnline
+                isOnline: otherOnline,
+                publicKeyJwk: store.getPublicKey(otherParticipant),
               },
               messages: dm.messages,
             });
@@ -124,22 +126,20 @@ export function setupSocketHandlers(io) {
           return;
         }
 
-        const text = sanitizeInput(data?.text);
-        const image = data?.image;
-        const isValidImage = typeof image === 'string' && image.startsWith('data:image/') && image.length < 3000000;
+        const safeText = typeof data?.text === 'string' ? data.text.slice(0, 5000) : ''; 
+        const safeImage = typeof data?.image === 'string' && data.image.length < 4000000 ? data.image : undefined; 
 
-        if (!text && !isValidImage) {
+        if (!safeText && !safeImage) {
           if (callback) callback({ success: false, error: 'Empty message' });
           return;
         }
 
-        // Build replyTo if provided
         let replyTo = undefined;
         if (data?.replyTo && data.replyTo.id && data.replyTo.username && data.replyTo.text) {
           replyTo = {
             id: data.replyTo.id,
             username: sanitizeInput(data.replyTo.username),
-            text: sanitizeInput(data.replyTo.text),
+            text: typeof data.replyTo.text === 'string' ? data.replyTo.text.slice(0, 5000) : '',
           };
         }
 
@@ -148,10 +148,10 @@ export function setupSocketHandlers(io) {
           userId: socket.id,
           username: user.username,
           avatar: user.avatar,
-          text,
+          text: safeText,
           timestamp: Date.now(),
           ...(replyTo && { replyTo }),
-          ...(isValidImage && { image }),
+          ...(safeImage && { image: safeImage }),
         };
 
         store.addMessage(message);
@@ -221,10 +221,12 @@ export function setupSocketHandlers(io) {
           return;
         }
 
-        const sanitizedText = sanitizeInput(text);
-        const isValidImage = typeof image === 'string' && image.startsWith('data:image/') && image.length < 3000000;
+        // For E2EE DMs, text and image are encrypted Base64 strings.
+        // We skip HTML sanitization and 'data:image/' checks.
+        const safeText = typeof text === 'string' ? text.slice(0, 5000) : ''; 
+        const safeImage = typeof image === 'string' && image.length < 4000000 ? image : undefined; 
 
-        if (!sanitizedText && !isValidImage) {
+        if (!safeText && !safeImage) {
           if (callback) callback({ success: false, error: 'Empty message' });
           return;
         }
@@ -235,7 +237,7 @@ export function setupSocketHandlers(io) {
           replyTo = {
             id: data.replyTo.id,
             username: sanitizeInput(data.replyTo.username),
-            text: sanitizeInput(data.replyTo.text),
+            text: typeof data.replyTo.text === 'string' ? data.replyTo.text.slice(0, 5000) : '',
           };
         }
 
@@ -243,10 +245,10 @@ export function setupSocketHandlers(io) {
           id: `dm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           userId: socket.id,
           username: user.username,
-          text: sanitizedText,
+          text: safeText,
           timestamp: Date.now(),
           ...(replyTo && { replyTo }),
-          ...(isValidImage && { image }),
+          ...(safeImage && { image: safeImage }),
         };
 
         store.addDMMessage(roomId, message);
@@ -267,6 +269,7 @@ export function setupSocketHandlers(io) {
                   socketId: socket.id,
                   username: user.username,
                   avatar: user.avatar,
+                  publicKeyJwk: user.publicKeyJwk,
                 },
               });
             } else {
@@ -275,6 +278,7 @@ export function setupSocketHandlers(io) {
                 roomId,
                 message,
                 isOwn: false,
+                senderPublicKeyJwk: user.publicKeyJwk,
               });
             }
           }

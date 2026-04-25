@@ -9,6 +9,9 @@ class InMemoryStore {
     // Map<username, socketId> - track which socket belongs to which username
     this.userSockets = new Map();
 
+    // Map<username, publicKeyJwk> - persist public keys even if offline
+    this.userPublicKeys = new Map();
+
     // Array<Message> - capped at maxMessages
     this.messages = [];
     this.maxMessages = 100;
@@ -35,6 +38,10 @@ class InMemoryStore {
     // Track socket by username
     this.userSockets.set(username, socketId);
 
+    if (userData.publicKeyJwk) {
+      this.userPublicKeys.set(username, userData.publicKeyJwk);
+    }
+
     return this.getUser(socketId);
   }
 
@@ -48,6 +55,10 @@ class InMemoryStore {
       return this.users.get(socketId);
     }
     return null;
+  }
+
+  getPublicKey(username) {
+    return this.userPublicKeys.get(username);
   }
 
   getSocketIdForUsername(username) {
