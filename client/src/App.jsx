@@ -386,14 +386,14 @@ function ChatApp() {
   }, [user, socket, emit]);
 
   // Send global message
-  const handleSendMessage = (text, replyTo) => {
+  const handleSendMessage = (text, replyTo, image) => {
     const replyData = replyTo ? {
       id: replyTo.id,
       username: replyTo.username,
       text: replyTo.text,
     } : undefined;
 
-    emit(ClientEventsLocal.MESSAGE_SEND, { text, replyTo: replyData }, (response) => {
+    emit(ClientEventsLocal.MESSAGE_SEND, { text, replyTo: replyData, image }, (response) => {
       if (!response?.success) {
         console.error('[App] Failed to send message:', response?.error);
       }
@@ -437,7 +437,7 @@ function ChatApp() {
   };
 
   // Send DM message
-  const handleDMSend = (text, replyTo) => {
+  const handleDMSend = (text, replyTo, image) => {
     if (!activeDM) return;
 
     const replyData = replyTo ? {
@@ -446,7 +446,7 @@ function ChatApp() {
       text: replyTo.text,
     } : undefined;
 
-    emit(ClientEventsLocal.DM_SEND, { roomId: activeDM.roomId, text, replyTo: replyData }, (response) => {
+    emit(ClientEventsLocal.DM_SEND, { roomId: activeDM.roomId, text, replyTo: replyData, image }, (response) => {
       if (response?.success) {
         // Add the sent message locally (server no longer echoes it back to sender)
         const sentMessage = {
@@ -456,6 +456,7 @@ function ChatApp() {
           text,
           timestamp: Date.now(),
           replyTo: replyData,
+          ...(image && { image }),
         };
         addDMMessage(activeDM.roomId, sentMessage);
       } else {

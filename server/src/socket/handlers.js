@@ -125,7 +125,10 @@ export function setupSocketHandlers(io) {
         }
 
         const text = sanitizeInput(data?.text);
-        if (!text) {
+        const image = data?.image;
+        const isValidImage = typeof image === 'string' && image.startsWith('data:image/') && image.length < 3000000;
+
+        if (!text && !isValidImage) {
           if (callback) callback({ success: false, error: 'Empty message' });
           return;
         }
@@ -148,6 +151,7 @@ export function setupSocketHandlers(io) {
           text,
           timestamp: Date.now(),
           ...(replyTo && { replyTo }),
+          ...(isValidImage && { image }),
         };
 
         store.addMessage(message);
@@ -217,7 +221,10 @@ export function setupSocketHandlers(io) {
         }
 
         const sanitizedText = sanitizeInput(text);
-        if (!sanitizedText) {
+        const image = data?.image;
+        const isValidImage = typeof image === 'string' && image.startsWith('data:image/') && image.length < 3000000;
+
+        if (!sanitizedText && !isValidImage) {
           if (callback) callback({ success: false, error: 'Empty message' });
           return;
         }
@@ -239,6 +246,7 @@ export function setupSocketHandlers(io) {
           text: sanitizedText,
           timestamp: Date.now(),
           ...(replyTo && { replyTo }),
+          ...(isValidImage && { image }),
         };
 
         store.addDMMessage(roomId, message);

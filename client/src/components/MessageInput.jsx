@@ -32,15 +32,35 @@ export function MessageInput({ onSend, placeholder = 'Type a message...', isDM =
   const [text, setText] = useState('');
   const [showEmoji, setShowEmoji] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
+  const [selectedImage, setSelectedImage] = useState(null);
   const inputRef = useRef(null);
   const emojiRef = useRef(null);
+  const fileInputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const lastEmitRef = useRef(null);
 
+  const handleImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Image is too large. Please select an image under 2MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setSelectedImage(event.target.result);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = ''; // Reset input
+  };
+
   const handleSend = () => {
-    if (text.trim()) {
-      onSend(text.trim(), replyTo);
+    if (text.trim() || selectedImage) {
+      onSend(text.trim(), replyTo, selectedImage);
       setText('');
+      setSelectedImage(null);
       if (onCancelReply) onCancelReply();
       setShowEmoji(false);
       inputRef.current?.focus();
@@ -54,6 +74,7 @@ export function MessageInput({ onSend, placeholder = 'Type a message...', isDM =
     }
     if (e.key === 'Escape') {
       if (showEmoji) { setShowEmoji(false); return; }
+      if (selectedImage) { setSelectedImage(null); return; }
       if (replyTo && onCancelReply) onCancelReply();
     }
   };
@@ -113,6 +134,24 @@ export function MessageInput({ onSend, placeholder = 'Type a message...', isDM =
 
   return (
     <div className="bg-chat-surface border-t border-chat-border flex-shrink-0 relative">
+      {/* Image Preview Bar */}
+      {selectedImage && (
+        <div className="flex items-center gap-3 px-4 pt-3 pb-1">
+          <div className="relative">
+            <img src={selectedImage} alt="Selected" className="h-20 w-20 object-cover rounded-xl border border-chat-border" />
+            <button
+              onClick={() => setSelectedImage(null)}
+              className="absolute -top-2 -right-2 p-1 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-colors"
+              title="Remove image"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Reply Preview Bar */}
       {replyTo && (
         <div className="flex items-center gap-3 px-4 pt-3 pb-1">
@@ -186,6 +225,25 @@ export function MessageInput({ onSend, placeholder = 'Type a message...', isDM =
 
       {/* Input Row */}
       <div className="flex items-end gap-2 sm:gap-3 p-3 sm:p-4">
+        {/* Attachment Button */}
+        <input
+          type="file"
+          accept="image/*"
+          ref={fileInputRef}
+          onChange={handleImageSelect}
+          className="hidden"
+        />
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 bg-chat-bg border border-chat-border hover:border-chat-primary text-chat-primary"
+          title="Attach Image"
+          aria-label="Attach an image"
+        >
+          <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </button>
+
         {/* Emoji Button — desktop only */}
         <button
           onClick={() => setShowEmoji(prev => !prev)}
@@ -225,14 +283,14 @@ export function MessageInput({ onSend, placeholder = 'Type a message...', isDM =
         {/* Send Button */}
         <button
           onClick={handleSend}
-          disabled={!text.trim()}
-          className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 ${
-            text.trim()
+          disabled={!text.trim() && !selectedImage}
+          className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 ${
+            text.trim() || selectedImage
               ? 'bg-chat-primary hover:bg-blue-600 text-white shadow-lg shadow-blue-500/25 transform hover:scale-105'
               : 'bg-chat-border text-gray-500 cursor-not-allowed'
           }`}
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
           </svg>
         </button>
@@ -240,3 +298,4 @@ export function MessageInput({ onSend, placeholder = 'Type a message...', isDM =
     </div>
   );
 }
+

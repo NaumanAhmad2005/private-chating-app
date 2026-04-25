@@ -171,9 +171,19 @@ export function MessageBubble({ message, isOwn, showAvatar = true, onReply, onCo
             }`}
             style={!isOwn ? { color: 'var(--chat-text)' } : undefined}
           >
-            <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-              {message.text}
-            </p>
+            {message.image && (
+              <img
+                src={message.image}
+                alt="Shared"
+                className={`max-w-full rounded-xl max-h-64 object-cover ${message.text ? 'mb-2' : ''}`}
+                style={{ minWidth: '150px' }}
+              />
+            )}
+            {message.text && (
+              <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+                {message.text}
+              </p>
+            )}
           </div>
 
           {/* Hover Actions — desktop only (appear beside the bubble) */}
