@@ -28,6 +28,7 @@ const ServerEventsLocal = {
   MESSAGE_NEW: 'message:new',
   DM_CREATED: 'dm:created',
   DM_RECEIVED: 'dm:received',
+  DM_INVITED: 'dm:invited',
   DM_CLOSED: 'dm:closed',
   DM_PARTNER_LEFT: 'dm:partner:left',
   DM_PARTNER_REJOINED: 'dm:partner:rejoined',
@@ -200,7 +201,7 @@ function ChatApp() {
       setDmInvitation({
         roomId,
         senderUsername: sender.username,
-        messageText: message.text,
+        messageText: message.text || "Sent an image",
       });
 
       // Auto-dismiss after 5 seconds
@@ -272,7 +273,7 @@ function ChatApp() {
         setDmInvitation({
           roomId,
           senderUsername: senderName,
-          messageText: message.text,
+          messageText: message.text || "Sent an image",
         });
         // Auto-dismiss after 5 seconds
         setTimeout(() => setDmInvitation(null), 5000);
@@ -280,8 +281,9 @@ function ChatApp() {
 
         // Browser notification (if permission granted)
         if (Notification.permission === 'granted') {
+          const bodyText = message.text ? `${message.text.slice(0, 50)}${message.text.length > 50 ? '...' : ''}` : "Sent an image";
           new Notification('New Private Message', {
-            body: `${senderName}: ${message.text.slice(0, 50)}${message.text.length > 50 ? '...' : ''}`,
+            body: `${senderName}: ${bodyText}`,
             icon: '/vite.svg',
             tag: roomId, // Replace existing notification for same chat
           });

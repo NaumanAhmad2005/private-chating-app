@@ -18,8 +18,8 @@ export function DMModal({ isOpen, targetUser, messages, typingUsers, currentUser
 
   if (!isOpen || !targetUser) return null;
 
-  const handleSend = (text, reply) => {
-    onSend(text, reply);
+  const handleSend = (text, reply, image) => {
+    onSend(text, reply, image);
     setReplyTo(null);
   };
 
