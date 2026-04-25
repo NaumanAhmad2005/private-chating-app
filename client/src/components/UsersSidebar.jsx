@@ -21,10 +21,10 @@ export function UsersSidebar({ users, currentUser, onUserClick, activeChats, onC
         <div className="flex w-full bg-chat-bg p-1 rounded-2xl border border-chat-border shadow-inner">
           <button
             onClick={() => { setActiveTab('general'); onGeneralClick?.(); }}
-            className={`flex-1 py-1.5 px-2 text-sm font-semibold rounded-[0.85rem] transition-all duration-200 ${
+            className={`flex-1 py-1.5 px-2 text-sm font-semibold rounded-[0.85rem] transition-all duration-200 focus:outline-none active:scale-[0.98] ${
               activeTab === 'general'
                 ? 'bg-chat-surface shadow-md border border-chat-border/50 text-chat-primary'
-                : 'text-gray-500 hover:text-gray-400'
+                : 'text-gray-500 hover:text-gray-400 border border-transparent'
             }`}
           >
             <div className="flex items-center justify-center gap-1.5">
@@ -37,10 +37,10 @@ export function UsersSidebar({ users, currentUser, onUserClick, activeChats, onC
 
           <button
             onClick={() => setActiveTab('dms')}
-            className={`flex-1 py-1.5 px-2 text-sm font-semibold rounded-[0.85rem] transition-all duration-200 ${
+            className={`flex-1 py-1.5 px-2 text-sm font-semibold rounded-[0.85rem] transition-all duration-200 focus:outline-none active:scale-[0.98] ${
               activeTab === 'dms'
                 ? 'bg-chat-surface shadow-md border border-chat-border/50 text-chat-primary'
-                : 'text-gray-500 hover:text-gray-400'
+                : 'text-gray-500 hover:text-gray-400 border border-transparent'
             }`}
           >
             <div className="flex items-center justify-center gap-1.5">
