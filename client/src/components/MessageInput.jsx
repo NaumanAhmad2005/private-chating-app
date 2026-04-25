@@ -225,7 +225,6 @@ export function MessageInput({ onSend, placeholder = 'Type a message...', isDM =
 
       {/* Input Row */}
       <div className="flex items-end gap-2 sm:gap-3 p-3 sm:p-4">
-        {/* Attachment Button */}
         <input
           type="file"
           accept="image/*"
@@ -233,16 +232,6 @@ export function MessageInput({ onSend, placeholder = 'Type a message...', isDM =
           onChange={handleImageSelect}
           className="hidden"
         />
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-200 bg-chat-bg border border-chat-border hover:border-chat-primary text-chat-primary"
-          title="Attach Image"
-          aria-label="Attach an image"
-        >
-          <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-        </button>
 
         {/* Emoji Button — desktop only */}
         <button
@@ -263,8 +252,8 @@ export function MessageInput({ onSend, placeholder = 'Type a message...', isDM =
           </svg>
         </button>
 
-        {/* Input */}
-        <div className="flex-1 relative">
+        {/* Input Wrapper */}
+        <div className="flex-1 relative flex items-end bg-chat-bg border border-chat-border rounded-2xl focus-within:border-chat-primary transition-colors">
           <textarea
             ref={inputRef}
             value={text}
@@ -275,9 +264,21 @@ export function MessageInput({ onSend, placeholder = 'Type a message...', isDM =
             onKeyDown={handleKeyDown}
             placeholder={replyTo ? `Reply to ${replyTo.username}...` : placeholder}
             rows={1}
-            className="w-full px-4 py-3 bg-chat-bg border border-chat-border rounded-2xl text-gray-100 placeholder-gray-500 focus:outline-none focus:border-chat-primary resize-none scrollbar-hide"
+            className="flex-1 px-4 py-3 bg-transparent text-gray-100 placeholder-gray-500 focus:outline-none resize-none scrollbar-hide"
             style={{ minHeight: '48px', maxHeight: '120px' }}
           />
+
+          {/* Attachment Button inside Input */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex-shrink-0 w-10 h-10 mb-1 mr-1 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-200 text-gray-400 hover:text-chat-primary hover:bg-chat-surface"
+            title="Attach Image"
+            aria-label="Attach an image"
+          >
+            <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </button>
         </div>
 
         {/* Send Button */}
