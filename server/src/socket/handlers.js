@@ -100,8 +100,8 @@ export function setupSocketHandlers(io) {
         // Send updated users list to everyone
         io.emit(ServerEvents.USERS_LIST, { users: store.getAllUsers() });
 
-        // Send recent messages to new user
-        socket.emit(ServerEvents.MESSAGE_NEW, { messages: store.getMessages() });
+        // Send only the last 10 global messages to the new user
+        socket.emit(ServerEvents.MESSAGE_NEW, { messages: store.getMessages().slice(-10) });
 
         console.log(`[Socket] User joined: ${username} (${socket.id})`);
       } catch (error) {
@@ -196,8 +196,9 @@ export function setupSocketHandlers(io) {
     // Handle DM send
     socket.on(ClientEvents.DM_SEND, (data, callback) => {
       try {
-        const { roomId, text } = data || {};
-        if (!roomId || !text) {
+        const { roomId, text, image } = data || {};
+        // Reject only if BOTH text and image are absent
+        if (!roomId || (!text && !image)) {
           if (callback) callback({ success: false, error: 'Invalid data' });
           return;
         }
