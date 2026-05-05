@@ -2,13 +2,146 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, interactive-widget=resizes-content" />
-    <meta name="description" content="Anonymous ephemeral chat - connect and disappear without a trace" />
-    <title>Anonymous Chat</title>
+
+    <!-- ── Primary Meta ── -->
+    <title>Blur Talk</title>
+    <meta name="description" content="Blur Talk — Anonymous ephemeral chat. Connect and disappear without a trace." />
+    <meta name="application-name" content="Blur Talk" />
+    <meta name="keywords" content="anonymous chat, ephemeral messaging, blur talk, private chat" />
+
+    <!-- ── PWA / Theme ── -->
+    <meta name="theme-color" content="#7C3AED" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- ── Apple PWA ── -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Blur Talk" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- ── Favicons ── -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+    <!-- ── Open Graph ── -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Blur Talk" />
+    <meta property="og:description" content="Anonymous ephemeral chat — connect and disappear without a trace." />
+    <meta property="og:image" content="/logo-512.png" />
+
+    <!-- ── Splash Screen Styles ── -->
+    <style>
+      /* Immediate paint — no FOUC */
+      html, body { margin: 0; padding: 0; background: #0F172A; }
+
+      #blur-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        background: linear-gradient(135deg, #0F172A 0%, #1E1040 50%, #0C1A2E 100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        transition: opacity 0.5s ease, visibility 0.5s ease;
+      }
+
+      #blur-splash.hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      #blur-splash .splash-logo {
+        width: 120px;
+        height: 120px;
+        border-radius: 28px;
+        box-shadow:
+          0 0 0 1px rgba(124, 58, 237, 0.3),
+          0 0 40px rgba(124, 58, 237, 0.4),
+          0 0 80px rgba(6, 182, 212, 0.2);
+        animation: splashPulse 2s ease-in-out infinite;
+      }
+
+      #blur-splash .splash-title {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        background: linear-gradient(135deg, #A78BFA 0%, #06B6D4 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin: 0;
+      }
+
+      #blur-splash .splash-subtitle {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-size: 0.85rem;
+        color: rgba(148, 163, 184, 0.7);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        margin: -16px 0 0;
+      }
+
+      #blur-splash .splash-spinner {
+        width: 36px;
+        height: 36px;
+        border: 3px solid rgba(124, 58, 237, 0.2);
+        border-top-color: #7C3AED;
+        border-radius: 50%;
+        animation: splashSpin 0.9s linear infinite;
+        margin-top: 8px;
+      }
+
+      @keyframes splashPulse {
+        0%, 100% { transform: scale(1); box-shadow: 0 0 0 1px rgba(124,58,237,0.3), 0 0 40px rgba(124,58,237,0.4), 0 0 80px rgba(6,182,212,0.2); }
+        50% { transform: scale(1.04); box-shadow: 0 0 0 1px rgba(124,58,237,0.5), 0 0 60px rgba(124,58,237,0.6), 0 0 120px rgba(6,182,212,0.3); }
+      }
+
+      @keyframes splashSpin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
   </head>
   <body>
+    <!-- ── Splash Screen ── -->
+    <div id="blur-splash" role="status" aria-label="Loading Blur Talk">
+      <img src="/logo-512.png" alt="Blur Talk Logo" class="splash-logo" />
+      <h1 class="splash-title">Blur Talk</h1>
+      <p class="splash-subtitle">Anonymous · Ephemeral</p>
+      <div class="splash-spinner"></div>
+    </div>
+
+    <!-- ── App Root ── -->
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+
+    <!-- ── Service Worker Registration ── -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker
+            .register('/sw.js', { scope: '/' })
+            .then((reg) => console.log('[SW] Registered:', reg.scope))
+            .catch((err) => console.warn('[SW] Registration failed:', err));
+        });
+      }
+
+      /* Hide splash once React has painted */
+      window.__hideSplash = function () {
+        const splash = document.getElementById('blur-splash');
+        if (splash) {
+          splash.classList.add('hidden');
+          setTimeout(() => splash.remove(), 600);
+        }
+      };
+
+      /* Safety fallback — hide after 4 s no matter what */
+      setTimeout(() => window.__hideSplash && window.__hideSplash(), 4000);
+    </script>
   </body>
 </html>
