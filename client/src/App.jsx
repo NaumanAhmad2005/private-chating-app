@@ -84,7 +84,7 @@ function ChatApp() {
   const activeChatsRef = useRef(activeChats);
   const activeDMRef = useRef(activeDM);
   const userRef = useRef(user);
-  const emitRef = useRef(emit);
+  const emitRef = useRef(null);
 
   // E2EE Keys state
   const [keyPair, setKeyPair] = useState(null);
@@ -131,9 +131,7 @@ function ChatApp() {
     userRef.current = user;
   }, [user]);
 
-  useEffect(() => {
-    emitRef.current = emit;
-  }, [emit]);
+  // emitRef is updated after useSocket (below) and kept in sync via useEffect
 
   // Fix mobile viewport height when virtual keyboard opens
   useEffect(() => {
@@ -419,6 +417,11 @@ function ChatApp() {
   ]);
 
   const { socket, emit, connected, connectionError } = useSocket(handlers);
+
+  // Keep emitRef in sync with the stable emit callback from useSocket
+  useEffect(() => {
+    emitRef.current = emit;
+  }, [emit]);
 
   // Check for rules acceptance on mount
   useEffect(() => {
