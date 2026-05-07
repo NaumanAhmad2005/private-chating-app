@@ -6,6 +6,7 @@ export const ClientEvents = {
   DM_CREATE: 'dm:create',
   DM_SEND: 'dm:send',
   DM_CLOSE: 'dm:close',
+  DM_READ: 'dm:read',
   TYPING_START: 'typing:start',
   TYPING_STOP: 'typing:stop',
 };
@@ -19,6 +20,7 @@ export const ServerEvents = {
   DM_RECEIVED: 'dm:received',
   DM_INVITED: 'dm:invited',
   DM_CLOSED: 'dm:closed',
+  DM_READ: 'dm:read',
   TYPING_UPDATE: 'typing:update',
   ERROR: 'error',
 };

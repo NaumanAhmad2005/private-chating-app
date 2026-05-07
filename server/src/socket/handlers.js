@@ -333,6 +333,32 @@ export function setupSocketHandlers(io) {
       }
     });
 
+    // Handle DM read receipt
+    socket.on(ClientEvents.DM_READ, (data) => {
+      try {
+        const { roomId } = data || {};
+        if (!roomId) return;
+
+        const dm = store.getDM(roomId);
+        if (!dm) return;
+
+        const user = store.getUser(socket.id);
+        if (!user || !dm.participants.includes(user.username)) return;
+
+        // Forward to the other participant
+        dm.participants.forEach(username => {
+          if (username !== user.username) {
+            const participantSocketId = store.getSocketIdForUsername(username);
+            if (participantSocketId) {
+              io.to(participantSocketId).emit(ServerEvents.DM_READ, { roomId });
+            }
+          }
+        });
+      } catch (error) {
+        console.error('[Socket] Error on dm:read', error);
+      }
+    });
+
     // Handle typing start
     socket.on(ClientEvents.TYPING_START, (data) => {
       const { roomId } = data || {};

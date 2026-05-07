@@ -18,6 +18,7 @@ const ClientEventsLocal = {
   DM_CREATE: 'dm:create',
   DM_SEND: 'dm:send',
   DM_CLOSE: 'dm:close',
+  DM_READ: 'dm:read',
   TYPING_START: 'typing:start',
   TYPING_STOP: 'typing:stop',
 };
@@ -31,6 +32,7 @@ const ServerEventsLocal = {
   DM_RECEIVED: 'dm:received',
   DM_INVITED: 'dm:invited',
   DM_CLOSED: 'dm:closed',
+  DM_READ: 'dm:read',
   DM_PARTNER_LEFT: 'dm:partner:left',
   DM_PARTNER_REJOINED: 'dm:partner:rejoined',
   TYPING_UPDATE: 'typing:update',
@@ -81,6 +83,8 @@ function ChatApp() {
   const typingTimeoutRef = useRef(null);
   const activeChatsRef = useRef(activeChats);
   const activeDMRef = useRef(activeDM);
+  const userRef = useRef(user);
+  const emitRef = useRef(emit);
 
   // E2EE Keys state
   const [keyPair, setKeyPair] = useState(null);
@@ -122,6 +126,14 @@ function ChatApp() {
   useEffect(() => {
     activeDMRef.current = activeDM;
   }, [activeDM]);
+
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
+  useEffect(() => {
+    emitRef.current = emit;
+  }, [emit]);
 
   // Fix mobile viewport height when virtual keyboard opens
   useEffect(() => {
@@ -281,6 +293,23 @@ function ChatApp() {
       ));
     },
 
+    // DM read receipt
+    [ServerEventsLocal.DM_READ]: ({ roomId }) => {
+      console.log('[App] DM read receipt:', roomId);
+      setDmMessages(prev => {
+        const roomMessages = prev[roomId];
+        if (!roomMessages) return prev;
+        const currentUserId = userRef.current?.socketId;
+        const updated = roomMessages.map(msg =>
+          msg.userId === currentUserId && msg.status !== 'read'
+            ? { ...msg, status: 'read' }
+            : msg
+        );
+        if (updated === roomMessages) return prev;
+        return { ...prev, [roomId]: updated };
+      });
+    },
+
     // DM received
     [ServerEventsLocal.DM_RECEIVED]: async ({ roomId, message, isOwn, senderPublicKeyJwk }) => {
       const secret = await getSharedSecret(message.username, senderPublicKeyJwk);
@@ -294,6 +323,11 @@ function ChatApp() {
       // Use refs for current values
       const currentActiveDM = activeDMRef.current;
       const currentActiveChats = activeChatsRef.current;
+
+      // Auto-read: if the DM is currently open, send read receipt immediately
+      if (currentActiveDM?.roomId === roomId && !isOwn) {
+        emitRef.current(ClientEventsLocal.DM_READ, { roomId });
+      }
 
       // If DM is not open and this is not my own message, mark as unread and notify
       if ((!currentActiveDM || currentActiveDM.roomId !== roomId) && !isOwn) {
@@ -442,6 +476,13 @@ function ChatApp() {
     }
   }, [hasAcceptedRules, user, connected, emit, setUser, setDmMessages, setActiveChats]);
 
+  // Emit read receipt when a DM is opened
+  useEffect(() => {
+    if (activeDM?.roomId && connected) {
+      emit(ClientEventsLocal.DM_READ, { roomId: activeDM.roomId });
+    }
+  }, [activeDM?.roomId, connected]);
+
   // Leave on unmount
   useEffect(() => {
     return () => {
@@ -538,6 +579,7 @@ function ChatApp() {
           username: user.username,
           text,
           timestamp: Date.now(),
+          status: 'sent',
           replyTo: replyData,
           ...(image && { image }),
         };
@@ -589,6 +631,7 @@ function ChatApp() {
                     username: user.username,
                     text: textToSend,
                     timestamp: Date.now(),
+                    status: 'sent',
                     replyTo: replyData,
                   };
                   addDMMessage(response.roomId, sentMessage);
@@ -604,6 +647,7 @@ function ChatApp() {
                     username: user.username,
                     text: textToSend,
                     timestamp: Date.now(),
+                    status: 'sent',
                     replyTo: replyData,
                   };
                   addDMMessage(response.roomId, sentMessage);
