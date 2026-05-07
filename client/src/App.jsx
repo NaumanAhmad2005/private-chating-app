@@ -208,11 +208,18 @@ function ChatApp() {
     },
 
     // DM created - only for sender (receiver gets DM_INVITED instead)
-    [ServerEventsLocal.DM_CREATED]: ({ roomId, targetUser, messages }) => {
+    [ServerEventsLocal.DM_CREATED]: async ({ roomId, targetUser, messages }) => {
       console.log('[App] DM created with:', targetUser.username);
       openDM(roomId, targetUser);
-      // Restore messages if provided (for recovered DMs)
+      // Restore messages if provided (for recovered DMs) — decrypt first
       if (messages && messages.length > 0) {
+        const secret = await getSharedSecret(targetUser.username, targetUser.publicKeyJwk);
+        if (secret) {
+          for (const msg of messages) {
+            if (msg.text) msg.text = await decryptText(msg.text, secret);
+            if (msg.image) msg.image = await decryptText(msg.image, secret);
+          }
+        }
         setDmMessages(prev => ({
           ...prev,
           [roomId]: messages,
@@ -457,11 +464,15 @@ function ChatApp() {
                 }
               }
 
-              // Restore messages
-              setDmMessages(prev => ({
-                ...prev,
-                [dm.roomId]: dm.messages || [],
-              }));
+              // Restore messages — but don't overwrite already-decrypted messages in local state
+              setDmMessages(prev => {
+                const existing = prev[dm.roomId];
+                if (existing && existing.length > 0) return prev; // Keep decrypted version
+                return {
+                  ...prev,
+                  [dm.roomId]: dm.messages || [],
+                };
+              });
               // Add to active chats - this makes them appear in the sidebar Messages tab
               setActiveChats(prev => {
                 if (prev.find(c => c.roomId === dm.roomId)) return prev;
@@ -530,11 +541,18 @@ function ChatApp() {
   const handleUserClick = (targetUser) => {
     if (targetUser.socketId === user?.socketId) return;
 
-    emit(ClientEventsLocal.DM_CREATE, { targetUserId: targetUser.socketId }, (response) => {
+    emit(ClientEventsLocal.DM_CREATE, { targetUserId: targetUser.socketId }, async (response) => {
       if (response?.success) {
         openDM(response.roomId, response.targetUser);
-        // Restore messages if provided
+        // Restore messages if provided — decrypt before storing
         if (response.messages && response.messages.length > 0) {
+          const secret = await getSharedSecret(response.targetUser.username, response.targetUser.publicKeyJwk);
+          if (secret) {
+            for (const msg of response.messages) {
+              if (msg.text) msg.text = await decryptText(msg.text, secret);
+              if (msg.image) msg.image = await decryptText(msg.image, secret);
+            }
+          }
           setDmMessages(prev => ({
             ...prev,
             [response.roomId]: response.messages,
@@ -606,11 +624,18 @@ function ChatApp() {
     const targetUser = users.find(u => u.socketId === message.userId);
     if (!targetUser || targetUser.socketId === user?.socketId) return;
 
-    emit(ClientEventsLocal.DM_CREATE, { targetUserId: targetUser.socketId }, (response) => {
+    emit(ClientEventsLocal.DM_CREATE, { targetUserId: targetUser.socketId }, async (response) => {
       if (response?.success) {
         openDM(response.roomId, response.targetUser);
-        // Restore messages if provided
+        // Restore messages if provided — decrypt before storing
         if (response.messages && response.messages.length > 0) {
+          const secret = await getSharedSecret(response.targetUser.username, response.targetUser.publicKeyJwk);
+          if (secret) {
+            for (const msg of response.messages) {
+              if (msg.text) msg.text = await decryptText(msg.text, secret);
+              if (msg.image) msg.image = await decryptText(msg.image, secret);
+            }
+          }
           setDmMessages(prev => ({
             ...prev,
             [response.roomId]: response.messages,
