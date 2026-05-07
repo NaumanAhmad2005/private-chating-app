@@ -241,9 +241,14 @@ export function MessageBubble({ message, isOwn, showAvatar = true, onReply, onCo
           )}
         </div>
 
-        {/* Timestamp */}
-        <span className="text-xs mt-1 px-1" style={{ color: 'var(--chat-text-muted)' }}>
+        {/* Timestamp & Status */}
+        <span className="text-xs mt-1 px-1 flex items-center gap-1" style={{ color: 'var(--chat-text-muted)' }}>
           {timeAgo(message.timestamp)}
+          {isOwn && (
+            <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor" style={{ opacity: 0.7 }}>
+              <path d="M6.5 11.5L3 8l1-1 2.5 2.5L12.5 3l1 1z"/>
+            </svg>
+          )}
         </span>
       </div>
     </div>

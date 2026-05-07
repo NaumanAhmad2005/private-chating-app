@@ -2,6 +2,22 @@ import React, { useRef, useEffect, useState } from 'react';
 import { MessageBubble } from './MessageBubble';
 import { TypingIndicator } from './TypingIndicator';
 
+const getDateLabel = (timestamp) => {
+  const date = new Date(timestamp);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (date.toDateString() === today.toDateString()) return 'Today';
+  if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+  return date.toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+    ...(date.getFullYear() !== today.getFullYear() && { year: 'numeric' }),
+  });
+};
+
 export function ChatPanel({ title, messages, typingUsers, currentUser, targetUser, onReply, onReplyPrivately, isDark, onToggleTheme, onMenuClick }) {
   const messagesEndRef = useRef(null);
   const containerRef = useRef(null);
@@ -117,18 +133,27 @@ export function ChatPanel({ title, messages, typingUsers, currentUser, targetUse
             {messages.map((message, index) => {
               const isOwn = message.userId === currentUser?.socketId;
               const showAvatar = index === 0 || messages[index - 1]?.userId !== message.userId;
+              const showDateSeparator = index === 0 || new Date(message.timestamp).toDateString() !== new Date(messages[index - 1].timestamp).toDateString();
 
               return (
-                <MessageBubble
-                  key={message.id}
-                  message={message}
-                  isOwn={isOwn}
-                  showAvatar={showAvatar}
-                  onReply={onReply}
-                  onCopy={() => {}}
-                  onReplyPrivately={onReplyPrivately}
-                  isDM={isDM}
-                />
+                <React.Fragment key={message.id}>
+                  {showDateSeparator && (
+                    <div className="flex items-center justify-center my-2 sm:my-3">
+                      <span className="text-xs px-3 py-1 rounded-full bg-chat-surface border border-chat-border select-none" style={{ color: 'var(--chat-text-muted)' }}>
+                        {getDateLabel(message.timestamp)}
+                      </span>
+                    </div>
+                  )}
+                  <MessageBubble
+                    message={message}
+                    isOwn={isOwn}
+                    showAvatar={showAvatar}
+                    onReply={onReply}
+                    onCopy={() => {}}
+                    onReplyPrivately={onReplyPrivately}
+                    isDM={isDM}
+                  />
+                </React.Fragment>
               );
             })}
             <div ref={messagesEndRef} />
