@@ -25,7 +25,10 @@ export function useSocket(handlers = {}) {
     // Initialize socket connection
     socketRef.current = io(SOCKET_URL, {
       autoConnect: true,
-      reconnection: false,
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
       transports: ['websocket', 'polling'],
     });
 

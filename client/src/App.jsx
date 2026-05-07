@@ -483,6 +483,13 @@ function ChatApp() {
     }
   }, [activeDM?.roomId, connected]);
 
+  // Clear user on disconnect so JOIN effect re-fires on reconnect
+  useEffect(() => {
+    if (!connected && user) {
+      setUser(null);
+    }
+  }, [connected, user, setUser]);
+
   // Leave on unmount
   useEffect(() => {
     return () => {
@@ -703,32 +710,7 @@ function ChatApp() {
     return <RulesModal onAccept={acceptRules} />;
   }
 
-  // Show connection error
-  if (connectionError) {
-    return (
-      <div className="h-app-screen bg-chat-bg flex items-center justify-center">
-        <div className="text-center max-w-md mx-4">
-          <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-          </div>
-          <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--chat-text)' }}>Cannot Connect to Server</h2>
-          <p className="mb-6" style={{ color: 'var(--chat-text-muted)' }}>
-            {connectionError}. Make sure the server is running on port 3001.
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-chat-primary text-white font-semibold rounded-xl transition-colors hover:opacity-90"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Show loading state
+  // Show loading state (Socket.io auto-reconnects with reconnection:true)
   if (!user) {
     return (
       <div className="h-app-screen bg-chat-bg flex items-center justify-center">
@@ -736,7 +718,9 @@ function ChatApp() {
           <div className="w-12 h-12 border-4 border-chat-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
           <p className="mt-4" style={{ color: 'var(--chat-text-muted)' }}>Connecting...</p>
           {!connected && (
-            <p className="text-sm mt-2" style={{ color: 'var(--chat-text-muted)' }}>Establishing connection to server...</p>
+            <p className="text-sm mt-2" style={{ color: connectionError ? '#ef4444' : 'var(--chat-text-muted)' }}>
+              {connectionError ? `Connection failed. Retrying... (${connectionError})` : 'Establishing connection to server...'}
+            </p>
           )}
         </div>
       </div>
