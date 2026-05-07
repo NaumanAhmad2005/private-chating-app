@@ -172,7 +172,7 @@ export function MessageInput({ onSend, placeholder = 'Type a message...', isDM =
   }, []);
 
   return (
-    <div className="bg-chat-surface border-t border-chat-border flex-shrink-0 relative">
+    <div className="bg-chat-surface border-t border-chat-border flex-shrink-0 relative pb-4 sm:pb-0">
       {/* Image Preview Bar */}
       {selectedImage && (
         <div className="flex items-center gap-3 px-4 pt-3 pb-1">
