@@ -714,13 +714,21 @@ function ChatApp() {
   if (!user) {
     return (
       <div className="h-app-screen bg-chat-bg flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center max-w-sm mx-4">
           <div className="w-12 h-12 border-4 border-chat-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
           <p className="mt-4" style={{ color: 'var(--chat-text-muted)' }}>Connecting...</p>
           {!connected && (
             <p className="text-sm mt-2" style={{ color: connectionError ? '#ef4444' : 'var(--chat-text-muted)' }}>
-              {connectionError ? `Connection failed. Retrying... (${connectionError})` : 'Establishing connection to server...'}
+              {connectionError ? `${connectionError} - Retrying...` : 'Establishing connection to server...'}
             </p>
+          )}
+          {connectionError && (
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-5 px-5 py-2.5 bg-chat-primary text-white text-sm font-medium rounded-xl hover:opacity-90 transition-opacity active:scale-95"
+            >
+              Try Again
+            </button>
           )}
         </div>
       </div>
